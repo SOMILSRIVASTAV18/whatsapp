@@ -1433,6 +1433,10 @@
           </div>
         </div>
         <div class="header-actions">
+          <div id="headerBackendPill" class="wa-status-badge" onclick="window.openBackendConfigModal()" title="Click to configure Node.js backend server" style="cursor: pointer; background: var(--slate-100); border: 1px solid var(--slate-200); color: var(--slate-700); font-size: 11px;">
+            <span class="badge-dot" id="headerBackendDot" style="background: var(--slate-400);"></span>
+            <span id="headerBackendText">BACKEND: CHECKING</span>
+          </div>
           <div id="headerStatusPill" class="wa-status-badge status-disconnected" onclick="switchTab('connect')" title="Click to view WhatsApp connection">
             <span class="badge-dot"></span>
             <span id="headerStatusText">DISCONNECTED</span>
@@ -1664,6 +1668,34 @@
 
         <!-- 2. CONNECT SECTION -->
         <section id="section-connect" class="tab-section">
+          <!-- Backend Host Banner -->
+          <div id="backendNoticeBanner" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 14px; min-width: 260px;">
+              <div id="backendStatusIcon" style="width: 40px; height: 40px; border-radius: 10px; background: #e7f7ef; color: var(--wa-teal); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 700; font-size: 14px; color: var(--slate-900);">Node.js WhatsApp Backend</span>
+                  <span id="backendBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: var(--slate-200); color: var(--slate-700);">CHECKING</span>
+                </div>
+                <div id="backendEndpointDisplay" class="mono" style="font-size: 12px; color: var(--slate-500); margin-top: 2px;">
+                  Target: Same Origin (default)
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-sm" onclick="window.runBackendTest(true)">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <span>Test Ping</span>
+              </button>
+              <button class="btn btn-sm btn-primary" onclick="window.openBackendConfigModal()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Configure Backend</span>
+              </button>
+            </div>
+          </div>
+
           <div class="grid-2col">
             <div class="card">
               <div class="card-header">
@@ -2164,6 +2196,43 @@
     </div>
   </div>
 
+  <!-- BACKEND CONFIG MODAL -->
+  <div id="backendConfigModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Node.js WhatsApp Backend Settings</h3>
+        <p class="modal-desc">Connect the dashboard to your Node.js runtime (server.js) for WhatsApp Web automation and QR pairing.</p>
+      </div>
+      <div>
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px; font-size: 12px; color: var(--slate-700); line-height: 1.5;">
+          <b style="color: var(--slate-900);">Why is this required on Cloudflare Pages?</b><br>
+          Cloudflare Pages hosts the static web dashboard. WhatsApp Web pairing and messaging require a real Node.js process with Chromium (<code class="mono">server.js</code>) running on your computer or a cloud server.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Backend Server URL</label>
+          <input type="url" id="inputBackendUrl" class="form-input" placeholder="http://127.0.0.1:3000 or https://your-server.onrender.com" autocomplete="off">
+          <span style="font-size: 11px; color: var(--slate-500); margin-top: 4px; display: block;">Leave empty to use the same host (default for local Node or Render/Railway).</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('http://127.0.0.1:3000')">Localhost (127.0.0.1:3000)</button>
+          <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('')">Same Origin (Default)</button>
+        </div>
+
+        <div id="backendTestResult" style="display: none; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 16px;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <button type="button" class="btn btn-sm" id="btnTestBackend" onclick="window.runBackendTest(false)">Test Connection</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn" onclick="window.closeBackendConfigModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="window.saveBackendConfig()">Save & Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATIONS -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -2256,6 +2325,180 @@
       messagingSenderId: "35117254965"
     };
 
+    // ==========================================
+    // BACKEND NODE.JS SERVER URL MANAGER
+    // ==========================================
+    window.isStaticHost = function() {
+      const h = window.location.hostname;
+      return h.endsWith('.pages.dev') || h.endsWith('.workers.dev') || h.endsWith('.web.app') || h.endsWith('.firebaseapp.com') || h.endsWith('.netlify.app') || h.endsWith('.vercel.app');
+    };
+
+    window.getBackendUrl = function() {
+      const saved = localStorage.getItem('desk_backend_url');
+      if (saved && saved.trim()) {
+        return saved.trim().replace(/\/+$/, '');
+      }
+      return '';
+    };
+
+    window.setBackendUrl = function(url) {
+      if (!url || !url.trim()) {
+        localStorage.removeItem('desk_backend_url');
+      } else {
+        localStorage.setItem('desk_backend_url', url.trim().replace(/\/+$/, ''));
+      }
+      window.updateBackendStatusBadge();
+    };
+
+    window.getApiUrl = function(path) {
+      const base = window.getBackendUrl();
+      const cleanPath = path.startsWith('/') ? path : '/' + path;
+      return base ? `${base}${cleanPath}` : cleanPath;
+    };
+
+    window.updateBackendStatusBadge = async function(livePing = false) {
+      const pill = document.getElementById('headerBackendPill');
+      const dot = document.getElementById('headerBackendDot');
+      const text = document.getElementById('headerBackendText');
+      const bannerBadge = document.getElementById('backendBadge');
+      const endpointDisplay = document.getElementById('backendEndpointDisplay');
+      const statusIcon = document.getElementById('backendStatusIcon');
+
+      const customUrl = window.getBackendUrl();
+      const isStatic = window.isStaticHost();
+
+      if (endpointDisplay) {
+        endpointDisplay.textContent = customUrl ? `Target: ${customUrl}` : (isStatic ? 'Target: Not connected (Cloudflare Pages)' : 'Target: Same Origin (default)');
+      }
+
+      if (customUrl) {
+        if (text) text.textContent = 'BACKEND: CUSTOM';
+      } else if (isStatic) {
+        if (text) text.textContent = 'BACKEND: OFFLINE';
+        if (dot) dot.style.background = 'var(--danger)';
+        if (bannerBadge) {
+          bannerBadge.textContent = 'SETUP REQUIRED';
+          bannerBadge.style.background = 'var(--danger-soft)';
+          bannerBadge.style.color = 'var(--danger)';
+        }
+        if (statusIcon) {
+          statusIcon.style.background = 'var(--danger-soft)';
+          statusIcon.style.color = 'var(--danger)';
+        }
+      }
+
+      if (livePing || (!isStatic && !customUrl)) {
+        try {
+          const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors' }).catch(() => null);
+          if (testRes && testRes.ok) {
+            if (dot) dot.style.background = 'var(--success)';
+            if (text) text.textContent = 'BACKEND: ONLINE';
+            if (bannerBadge) {
+              bannerBadge.textContent = 'ONLINE';
+              bannerBadge.style.background = 'var(--success-soft)';
+              bannerBadge.style.color = 'var(--success)';
+            }
+            if (statusIcon) {
+              statusIcon.style.background = 'var(--success-soft)';
+              statusIcon.style.color = 'var(--wa-teal)';
+            }
+            return true;
+          }
+        } catch (_) {}
+
+        if (dot) dot.style.background = isStatic ? 'var(--danger)' : 'var(--warning)';
+        if (text) text.textContent = isStatic ? 'BACKEND: NOT FOUND' : 'BACKEND: OFFLINE';
+        if (bannerBadge) {
+          bannerBadge.textContent = isStatic ? 'OFFLINE (STATIC HOST)' : 'OFFLINE';
+          bannerBadge.style.background = 'var(--warning-soft)';
+          bannerBadge.style.color = 'var(--warning)';
+        }
+        if (statusIcon) {
+          statusIcon.style.background = 'var(--warning-soft)';
+          statusIcon.style.color = 'var(--warning)';
+        }
+        return false;
+      }
+    };
+
+    window.openBackendConfigModal = function() {
+      const modal = document.getElementById('backendConfigModal');
+      const input = document.getElementById('inputBackendUrl');
+      const resultBox = document.getElementById('backendTestResult');
+      if (input) input.value = window.getBackendUrl();
+      if (resultBox) resultBox.style.display = 'none';
+      if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeBackendConfigModal = function() {
+      const modal = document.getElementById('backendConfigModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.setBackendPreset = function(url) {
+      const input = document.getElementById('inputBackendUrl');
+      if (input) input.value = url;
+    };
+
+    window.saveBackendConfig = async function() {
+      const input = document.getElementById('inputBackendUrl');
+      const newUrl = input ? input.value.trim() : '';
+      window.setBackendUrl(newUrl);
+      window.closeBackendConfigModal();
+      window.showToast('Backend server URL updated!');
+      await window.updateBackendStatusBadge(true);
+      window.fetchStatus();
+    };
+
+    window.runBackendTest = async function(showToastAlert = false) {
+      const input = document.getElementById('inputBackendUrl');
+      const testUrl = (input && document.getElementById('backendConfigModal').classList.contains('hidden') === false)
+        ? input.value.trim().replace(/\/+$/, '')
+        : window.getBackendUrl();
+
+      const resultBox = document.getElementById('backendTestResult');
+      const btn = document.getElementById('btnTestBackend');
+      if (btn) btn.disabled = true;
+
+      const endpoint = (testUrl ? testUrl : '') + '/api/health';
+      if (showToastAlert) window.showToast(`Pinging ${endpoint || '/api/health'}…`);
+
+      try {
+        const start = Date.now();
+        const res = await fetch(endpoint, { method: 'GET', mode: 'cors' });
+        const latency = Date.now() - start;
+
+        if (res.ok) {
+          const json = await res.json().catch(() => ({}));
+          const successMsg = `Connected successfully! Response time: ${latency}ms (Server: ${json.server || 'WhatsApp Desk'})`;
+          if (resultBox) {
+            resultBox.style.display = 'block';
+            resultBox.style.background = 'var(--success-soft)';
+            resultBox.style.color = 'var(--success)';
+            resultBox.style.border = '1px solid #a7f3d0';
+            resultBox.textContent = `✓ ${successMsg}`;
+          }
+          if (showToastAlert) window.showToast(`✓ ${successMsg}`);
+          window.updateBackendStatusBadge(true);
+        } else {
+          throw new Error(`Server returned HTTP ${res.status}: ${res.statusText}`);
+        }
+      } catch (err) {
+        const errorMsg = `Connection failed: ${err.message}. Make sure node server.js is running and CORS is enabled.`;
+        if (resultBox) {
+          resultBox.style.display = 'block';
+          resultBox.style.background = 'var(--danger-soft)';
+          resultBox.style.color = 'var(--danger)';
+          resultBox.style.border = '1px solid #fecaca';
+          resultBox.textContent = `✗ ${errorMsg}`;
+        }
+        if (showToastAlert) window.showToast(`✗ ${errorMsg}`, true);
+        window.updateBackendStatusBadge(false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    };
+
     // Safe configuration loader
     async function resolveFirebaseConfig() {
       try {
@@ -2270,7 +2513,7 @@
       } catch (_) {}
 
       try {
-        const res = await fetch('/api/firebase-config', { cache: 'no-cache' });
+        const res = await fetch(window.getApiUrl('/api/firebase-config'), { cache: 'no-cache' });
         if (res.ok) {
           const text = await res.text();
           if (text && text.trim().startsWith('{')) {
@@ -3058,17 +3301,78 @@
 
       try {
         window.showToast('Parsing CSV…');
-        const token = await currentUser.getIdToken();
-        const res = await fetch('/api/contacts/parse-csv', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        let contacts = [];
+        let count = 0;
 
-        window.showToast(`Importing ${data.count} contacts…`);
-        for (const c of data.contacts) {
+        // Try backend parser first
+        try {
+          const token = await currentUser.getIdToken();
+          const res = await fetch(window.getApiUrl('/api/contacts/parse-csv'), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+          });
+          if (res.ok) {
+            const data = await res.json();
+            contacts = data.contacts || [];
+            count = data.count || contacts.length;
+          }
+        } catch (_) {}
+
+        // Fallback: parse client-side directly if backend is offline or static host
+        if (!contacts.length) {
+          const text = await file.text();
+          const rows = [];
+          let row = [], cell = '', quoted = false;
+          for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (quoted) {
+              if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+              else if (c === '"') quoted = false;
+              else cell += c;
+            } else {
+              if (c === '"') quoted = true;
+              else if (c === ',') { row.push(cell); cell = ''; }
+              else if (c === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+              else cell += c;
+            }
+          }
+          if (cell.length || row.length) { row.push(cell.replace(/\r$/, '')); rows.push(row); }
+          if (rows.length >= 2) {
+            const headers = rows.shift().map(h => h.trim());
+            const seen = new Set();
+            for (let i = 0; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r || !r.some(v => String(v).trim())) continue;
+              const rowObj = Object.fromEntries(headers.map((h, idx) => [h, r[idx] ?? '']));
+              const keys = {};
+              for (const [k, v] of Object.entries(rowObj)) {
+                keys[String(k).trim().toLowerCase().replace(/[\s_-]+/g, '')] = v;
+              }
+              const name = keys.name || keys.fullname || keys.contactname || keys.customer || `Contact ${i + 1}`;
+              const phone = String(keys.phone || keys.phonenumber || keys.mobile || keys.whatsapp || keys.number || '').replace(/\D/g, '');
+              const consent = String(keys.optedin ?? keys.consent ?? keys.whatsappconsent ?? keys.permission ?? '').trim().toLowerCase();
+              const optedIn = ['yes', 'y', 'true', '1', 'opted-in', 'optedin', 'consented'].includes(consent);
+              if (phone && phone.length >= 8 && !seen.has(phone)) {
+                seen.add(phone);
+                contacts.push({
+                  id: `c_${Date.now()}_${i}_${phone}`,
+                  ownerId: currentUser.uid,
+                  name: String(name || 'Contact').slice(0, 150).trim(),
+                  phone,
+                  optedIn,
+                  createdAt: new Date().toISOString()
+                });
+              }
+            }
+            count = contacts.length;
+          }
+        }
+
+        if (!contacts.length) throw new Error('Could not parse any valid contacts with phone numbers from this CSV.');
+
+        window.showToast(`Importing ${count} contacts…`);
+        for (const c of contacts) {
           if (activeContactListFilter !== 'all') {
             c.listIds = [activeContactListFilter];
           } else {
@@ -3077,7 +3381,7 @@
           await setDoc(doc(db, 'users', currentUser.uid, 'contacts', c.id), c);
           selectedContactIds.add(c.id);
         }
-        window.showToast(`Imported ${data.count} contacts successfully!`);
+        window.showToast(`Imported ${count} contacts successfully!`);
       } catch (err) {
         window.showToast(err.message, true);
       }
@@ -3373,7 +3677,7 @@
 
       try {
         const token = await currentUser.getIdToken();
-        const res = await fetch('/api/send', {
+        const res = await fetch(window.getApiUrl('/api/send'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3396,8 +3700,11 @@
         } catch (_) {}
 
         if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error('WhatsApp backend route (/api/send) is not reachable on this static host. Run the Node.js backend server to broadcast via WhatsApp Web.');
+          if (res.status === 404 || !res.status) {
+            if (window.isStaticHost() && !window.getBackendUrl()) {
+              setTimeout(window.openBackendConfigModal, 800);
+            }
+            throw new Error(`WhatsApp backend route (${window.getApiUrl('/api/send')}) is not reachable on this host. Run the Node.js backend server (server.js) to broadcast.`);
           }
           throw new Error(data.error || `Server returned error (${res.status})`);
         }
@@ -3512,11 +3819,11 @@
       if (!currentUser) return;
       try {
         const token = await currentUser.getIdToken();
-        const res = await fetch('/api/status', {
+        const res = await fetch(window.getApiUrl('/api/status'), {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-          updateStatusUI({ status: 'disconnected', message: 'Ready in standalone Firebase mode.' });
+          updateStatusUI({ status: 'disconnected', message: window.isStaticHost() && !window.getBackendUrl() ? 'Cloudflare Pages detected. Connect your Node.js backend (server.js) to pair WhatsApp.' : 'Ready in standalone Firebase mode.' });
           return;
         }
         const text = await res.text();
@@ -3527,7 +3834,7 @@
           updateStatusUI({ status: 'disconnected', message: 'Ready in standalone Firebase mode.' });
         }
       } catch (e) {
-        updateStatusUI({ status: 'disconnected', message: 'Ready in standalone Firebase mode.' });
+        updateStatusUI({ status: 'disconnected', message: 'Backend unreachable. Click "Configure Backend" to verify URL.' });
       }
     };
 
@@ -3587,12 +3894,24 @@
       try {
         window.showToast('Initiating WhatsApp pairing…');
         const token = await currentUser.getIdToken();
-        const res = await fetch('/api/whatsapp/connect', {
+        const res = await fetch(window.getApiUrl('/api/whatsapp/connect'), {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-          throw new Error('WhatsApp backend server is not available at /api/whatsapp/connect on this host. Run node server.js to pair your device.');
+          let errData = {};
+          try { errData = await res.json(); } catch (_) {}
+          const isStatic = window.isStaticHost();
+          const targetUrl = window.getApiUrl('/api/whatsapp/connect');
+          const errorMsg = errData.error || (
+            isStatic && !window.getBackendUrl()
+              ? 'WhatsApp backend server is not reachable on Cloudflare Pages. Please connect your running Node.js server (server.js) using the Backend Settings.'
+              : `WhatsApp backend server is not available at ${targetUrl}. Please ensure node server.js is running.`
+          );
+          if (isStatic && !window.getBackendUrl()) {
+            setTimeout(window.openBackendConfigModal, 600);
+          }
+          throw new Error(errorMsg);
         }
         setTimeout(window.fetchStatus, 1500);
       } catch (err) {
@@ -3604,12 +3923,12 @@
       if (!currentUser) return;
       try {
         const token = await currentUser.getIdToken();
-        const res = await fetch('/api/whatsapp/disconnect', {
+        const res = await fetch(window.getApiUrl('/api/whatsapp/disconnect'), {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-          throw new Error('WhatsApp backend server is not available at /api/whatsapp/disconnect.');
+          throw new Error(`WhatsApp backend server is not available at ${window.getApiUrl('/api/whatsapp/disconnect')}.`);
         }
         window.showToast('WhatsApp session disconnected.');
         window.fetchStatus();
@@ -3622,6 +3941,7 @@
       if (currentUser) window.fetchStatus();
     }, 6000);
 
+    window.updateBackendStatusBadge(true);
     initFirebase();
   </script>
 
