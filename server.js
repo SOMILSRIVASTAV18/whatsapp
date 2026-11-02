@@ -6,16 +6,43 @@ const fs = require('fs');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
 
-// Load Firebase configuration
-const firebaseConfig = require('./firebase-applet-config.json');
+// Cloudflare Pages build environment auto-detection
+// If a user configured 'npm run build && npm start' as their Cloudflare Pages build command,
+// prevent the persistent server from hanging the build runner.
+if (process.env.CF_PAGES === '1' || process.env.CF_PAGES_COMMIT_SHA) {
+  console.log('Cloudflare Pages build environment detected (CF_PAGES=1). Static build completed successfully.');
+  process.exit(0);
+}
 
-// Initialize Firebase Admin SDK
+// Load Firebase configuration
+let firebaseConfig = {};
 try {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      projectId: firebaseConfig.projectId
-    });
+  firebaseConfig = require('./firebase-applet-config.json');
+} catch (e) {
+  try {
+    firebaseConfig = require('./public/firebase-applet-config.json');
+  } catch (_) {}
+}
+
+// Initialize Firebase Admin SDK (compatible with firebase-admin v14+)
+let appAdmin = null;
+let authAdmin = null;
+try {
+  const { getApps, initializeApp, getApp } = require('firebase-admin/app');
+  const { getAuth } = require('firebase-admin/auth');
+  const apps = getApps();
+  if (!apps.length) {
+    if (firebaseConfig.projectId) {
+      appAdmin = initializeApp({
+        projectId: firebaseConfig.projectId
+      });
+    } else {
+      appAdmin = initializeApp();
+    }
+  } else {
+    appAdmin = getApp();
   }
+  authAdmin = getAuth(appAdmin);
 } catch (err) {
   console.warn('Firebase Admin init warning:', err.message);
 }
@@ -79,7 +106,11 @@ async function authMiddleware(req, res, next) {
   try {
     let decodedToken = null;
     try {
-      decodedToken = await admin.auth().verifyIdToken(token);
+      if (authAdmin) {
+        decodedToken = await authAdmin.verifyIdToken(token);
+      } else {
+        throw new Error('Firebase Admin Auth instance not available');
+      }
     } catch (adminErr) {
       // Fallback for sandboxed network if verifyIdToken fails network call: decode JWT payload safely
       const parts = token.split('.');
