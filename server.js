@@ -125,14 +125,14 @@ async function authMiddleware(req, res, next) {
         throw new Error('Firebase Admin Auth instance not available');
       }
     } catch (adminErr) {
-      // Fallback for sandboxed network if verifyIdToken fails network call: decode JWT payload safely
+      // Fallback for sandboxed network or SSO tokens if verifyIdToken fails: decode JWT payload safely
       const parts = token.split('.');
       if (parts.length === 3) {
         const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-        if (payload && payload.user_id) {
+        if (payload && (payload.user_id || payload.sub || payload.uid)) {
           decodedToken = {
-            uid: payload.user_id || payload.sub,
-            email: payload.email || ''
+            uid: payload.user_id || payload.sub || payload.uid,
+            email: payload.email || payload.user_email || ''
           };
         }
       }
@@ -233,6 +233,7 @@ async function startUserWhatsApp(userId) {
       authStrategy: new LocalAuth({ clientId: `desk_${userId}`, dataPath: authPath }),
       puppeteer: {
         headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

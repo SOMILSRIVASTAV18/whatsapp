@@ -1288,81 +1288,111 @@
 </head>
 <body>
 
-  <!-- FIREBASE AUTHENTICATION OVERLAY -->
+  <!-- TSDC SSO & AUTHENTICATION OVERLAY -->
   <div id="authOverlay" class="auth-overlay">
-    <div class="auth-card">
+    <div class="auth-card" style="max-width: 440px;">
       <div style="text-align: center; margin-bottom: 22px;">
-        <div class="logo-icon" style="width: 44px; height: 44px; margin: 0 auto 12px;">
+        <div class="logo-icon" style="width: 48px; height: 48px; margin: 0 auto 12px; background: linear-gradient(135deg, #008069, #00a884); box-shadow: 0 4px 14px rgba(0, 168, 132, 0.4);">
           <!-- WhatsApp Vector Logo -->
-          <svg class="icon icon-lg icon-filled" viewBox="0 0 24 24" style="color: white;">
+          <svg class="icon icon-lg icon-filled" viewBox="0 0 24 24" style="color: white; width: 26px; height: 26px;">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
         </div>
-        <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900); letter-spacing: -0.02em;">Broadcast Desk</h2>
-        <p style="font-size: 12.5px; color: var(--slate-500); margin-top: 3px;">Sign in to your private workspace</p>
+        <h2 style="font-size: 21px; font-weight: 800; color: var(--slate-900); letter-spacing: -0.02em;">Broadcast Desk</h2>
+        <p style="font-size: 12.5px; color: var(--slate-500); margin-top: 3px;">TSDC Workspace Portal</p>
       </div>
 
-      <!-- Auth Tabs -->
-      <div class="auth-tabs">
-        <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
-        <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</div>
-        <div class="auth-tab" id="tabForgot" onclick="switchAuthTab('forgot')">Reset Password</div>
-      </div>
-
-      <!-- LOGIN FORM -->
-      <form id="formLogin" onsubmit="window.doLogin(event)">
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" id="loginEmail" class="form-input" placeholder="you@company.com" required autocomplete="email">
+      <!-- PRIMARY TSDC SSO ACTION BOX -->
+      <div id="tsdcSsoPrimary" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; margin-bottom: 18px;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: rgba(0, 128, 105, 0.1); border-radius: 9999px; font-size: 11px; font-weight: 700; color: var(--wa-teal); margin-bottom: 10px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>TSDC Central SSO</span>
         </div>
-        <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="margin-bottom:0">Password</label>
-            <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="font-size: 11.5px; color: var(--wa-teal); text-decoration: none; font-weight: 700;">Forgot Password?</a>
-          </div>
-          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; font-size: 13.5px;" id="btnLoginSubmit">
-          <span>Sign In</span>
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-
-      <!-- REGISTER FORM -->
-      <form id="formRegister" class="hidden" onsubmit="window.doRegister(event)">
-        <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" id="regName" class="form-input" placeholder="e.g. Sarah Connor" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Company / Workspace (Optional)</label>
-          <input type="text" id="regCompany" class="form-input" placeholder="e.g. Growth Ventures">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" id="regEmail" class="form-input" placeholder="you@company.com" required autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password (Min 6 characters)</label>
-          <input type="password" id="regPassword" class="form-input" placeholder="Create secure password" minlength="6" required autocomplete="new-password">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; font-size: 13.5px;" id="btnRegSubmit">
-          <span>Create Account</span>
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-
-      <!-- FORGOT PASSWORD FORM -->
-      <form id="formForgot" class="hidden" onsubmit="window.doForgot(event)">
-        <p style="font-size: 12px; color: var(--slate-600); margin-bottom: 16px; line-height: 1.5;">
-          Enter your registered email address. We will send a secure password reset link to your inbox.
+        <div style="font-size: 15px; font-weight: 800; color: var(--slate-900); margin-bottom: 4px;">Single Sign-On Gateway</div>
+        <p style="font-size: 12px; color: var(--slate-600); line-height: 1.5; margin-bottom: 16px;">
+          Sign in via Google or Email on <b style="color: var(--slate-800);">auth.tsdc.in</b> to access your broadcast session.
         </p>
-        <div class="form-group">
-          <label class="form-label">Registered Email</label>
-          <input type="email" id="forgotEmail" class="form-input" placeholder="you@domain.com" required autocomplete="email">
+
+        <button type="button" class="btn btn-primary" onclick="window.redirectToSso()" style="width: 100%; padding: 12px; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 168, 132, 0.35);">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Sign In with auth.tsdc.in</span>
+        </button>
+
+        <div id="ssoRedirectStatus" style="font-size: 11.5px; color: var(--wa-teal); margin-top: 10px; display: none; font-weight: 600;">
+          Redirecting to auth.tsdc.in…
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;" id="btnForgotSubmit">Send Reset Link</button>
-      </form>
+      </div>
+
+      <!-- COLLAPSIBLE DEV / DIRECT LOGIN ACCORDION -->
+      <div style="text-align: center;">
+        <button type="button" onclick="window.toggleLocalAuthAccordion()" style="background: none; border: none; font-size: 11.5px; color: var(--slate-500); text-decoration: underline; cursor: pointer;">
+          Direct Email / Dev Mode Options
+        </button>
+      </div>
+
+      <div id="localAuthContainer" class="hidden" style="margin-top: 16px; border-top: 1px dashed var(--slate-300); padding-top: 14px;">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Email</div>
+          <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</div>
+          <div class="auth-tab" id="tabForgot" onclick="switchAuthTab('forgot')">Reset</div>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="formLogin" onsubmit="window.doLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="loginEmail" class="form-input" placeholder="you@tsdc.in" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" style="margin-bottom:0">Password</label>
+              <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="font-size: 11px; color: var(--wa-teal); text-decoration: none; font-weight: 700;">Forgot?</a>
+            </div>
+            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" id="btnLoginSubmit">
+            <span>Direct Sign In</span>
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="formRegister" class="hidden" onsubmit="window.doRegister(event)">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="regName" class="form-input" placeholder="e.g. Sarah Connor" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company / Workspace (Optional)</label>
+            <input type="text" id="regCompany" class="form-input" placeholder="e.g. Growth Ventures">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="regEmail" class="form-input" placeholder="you@company.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password (Min 6 characters)</label>
+            <input type="password" id="regPassword" class="form-input" placeholder="Create secure password" minlength="6" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" id="btnRegSubmit">
+            <span>Create Account</span>
+          </button>
+        </form>
+
+        <!-- FORGOT PASSWORD FORM -->
+        <form id="formForgot" class="hidden" onsubmit="window.doForgot(event)">
+          <div class="form-group">
+            <label class="form-label">Registered Email</label>
+            <input type="email" id="forgotEmail" class="form-input" placeholder="you@domain.com" required autocomplete="email">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px;" id="btnForgotSubmit">Send Reset Link</button>
+        </form>
+
+        <div style="margin-top: 14px; text-align: center;">
+          <button type="button" class="btn btn-sm" onclick="window.simulateTsdcLogin()" style="width: 100%; font-size: 11px;">
+            Simulate TSDC SSO Login (Dev Preview)
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1707,6 +1737,22 @@
                   <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   <span>Refresh</span>
                 </button>
+              </div>
+
+              <!-- Backend Offline Warning Banner -->
+              <div id="backendOfflineAlert" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+                  <div>
+                    <div style="font-weight: 700; color: #78350f; margin-bottom: 2px; display: flex; align-items: center; gap: 6px;">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <span>Node.js Backend Required for WhatsApp Pairing</span>
+                    </div>
+                    <span style="line-height: 1.45; display: block;">Cloudflare Pages only hosts static files. WhatsApp Web pairing requires the Node.js backend (<code class="mono">server.js</code>) running on Render or your server.</span>
+                  </div>
+                  <button type="button" class="btn btn-sm" onclick="window.openBackendConfigModal()" style="white-space: nowrap; background: #d97706; color: white; border: none; font-weight: 600; cursor: pointer; padding: 6px 12px;">
+                    Connect Server
+                  </button>
+                </div>
               </div>
 
               <!-- QR Display Area -->
@@ -2198,26 +2244,34 @@
 
   <!-- BACKEND CONFIG MODAL -->
   <div id="backendConfigModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-content" style="max-width: 560px;">
       <div class="modal-header">
-        <h3 class="modal-title">Node.js WhatsApp Backend Settings</h3>
+        <h3 class="modal-title">WhatsApp Backend Connection Settings</h3>
         <p class="modal-desc">Connect the dashboard to your Node.js runtime (server.js) for WhatsApp Web automation and QR pairing.</p>
       </div>
       <div>
-        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px; font-size: 12px; color: var(--slate-700); line-height: 1.5;">
-          <b style="color: var(--slate-900);">Why is this required on Cloudflare Pages?</b><br>
-          Cloudflare Pages hosts the static web dashboard. WhatsApp Web pairing and messaging require a real Node.js process with Chromium (<code class="mono">server.js</code>) running on your computer or a cloud server.
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; font-size: 12px; color: #1e3a8a; line-height: 1.55;">
+          <div style="font-weight: 700; color: #1e40af; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #2563eb;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>Why did "Backend server not available" appear?</span>
+          </div>
+          Cloudflare Pages only hosts static files (HTML/CSS/JS). WhatsApp Web multi-device automation strictly requires the Node.js backend (<code class="mono">server.js</code>) running with headless Chromium.
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dbeafe; font-size: 11.5px;">
+            <b>Two easy ways to resolve:</b><br>
+            • <b>Option A (Easiest - All-in-One on Render):</b> Deploy this project as a Web Service on Render using the pre-configured <code class="mono">/render</code> folder or Dockerfile. When opening your Render URL, frontend and WhatsApp pairing work automatically on the same host.<br>
+            • <b>Option B (Cloudflare + Render):</b> Keep this frontend on Cloudflare Pages, deploy the backend to Render, and paste your Render URL below.
+          </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Backend Server URL</label>
-          <input type="url" id="inputBackendUrl" class="form-input" placeholder="http://127.0.0.1:3000 or https://your-server.onrender.com" autocomplete="off">
-          <span style="font-size: 11px; color: var(--slate-500); margin-top: 4px; display: block;">Leave empty to use the same host (default for local Node or Render/Railway).</span>
+          <label class="form-label" style="font-weight: 700;">Node.js Backend Server URL</label>
+          <input type="url" id="inputBackendUrl" class="form-input" placeholder="https://your-whatsapp-desk.onrender.com or http://127.0.0.1:3000" autocomplete="off">
+          <span style="font-size: 11px; color: var(--slate-500); margin-top: 4px; display: block;">Enter your live Render web service URL or local backend address. Leave empty if visiting the Node.js server directly.</span>
         </div>
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
           <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('http://127.0.0.1:3000')">Localhost (127.0.0.1:3000)</button>
-          <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('')">Same Origin (Default)</button>
+          <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('')">Same Origin (Clear)</button>
         </div>
 
         <div id="backendTestResult" style="display: none; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 16px;"></div>
@@ -2225,7 +2279,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
           <button type="button" class="btn btn-sm" id="btnTestBackend" onclick="window.runBackendTest(false)">Test Connection</button>
           <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn" onclick="window.closeBackendConfigModal()">Cancel</button>
+            <button type="button" class="btn" onclick="window.closeBackendConfigModal()">Close</button>
             <button type="button" class="btn btn-primary" onclick="window.saveBackendConfig()">Save & Apply</button>
           </div>
         </div>
@@ -2246,7 +2300,8 @@
       sendPasswordResetEmail,
       signOut,
       onAuthStateChanged,
-      updateProfile
+      updateProfile,
+      signInWithCustomToken
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
     import {
       getFirestore,
@@ -2263,6 +2318,123 @@
       getDocFromServer,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+    // ==========================================
+    // TSDC SSO GATEWAY AUTHENTICATION (auth.tsdc.in)
+    // ==========================================
+    // B. Read the session token when auth.tsdc.in redirects back
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const idToken = hashParams.get('id_token') || queryParams.get('id_token');
+    const userEmail = hashParams.get('email') || queryParams.get('email');
+    const userId = hashParams.get('uid') || queryParams.get('uid');
+
+    if (idToken) {
+      // 1. Store token in session
+      sessionStorage.setItem('tsdc_token', idToken);
+      localStorage.setItem('tsdc_token', idToken);
+      if (userEmail) {
+        sessionStorage.setItem('tsdc_email', userEmail);
+        localStorage.setItem('tsdc_email', userEmail);
+      }
+      if (userId) {
+        sessionStorage.setItem('tsdc_uid', userId);
+        localStorage.setItem('tsdc_uid', userId);
+      }
+
+      // 2. Clean up the URL bar
+      window.history.replaceState(null, '', window.location.pathname);
+
+      console.log(`Successfully signed in via TSDC SSO as ${userEmail || userId || 'authenticated user'}`);
+    }
+
+    const isInsideIframe = window.self !== window.top;
+    const isTsdcAuthenticated = Boolean(sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token'));
+
+    // A. Redirect unauthenticated users to auth.tsdc.in
+    window.redirectToSso = function() {
+      const returnUrl = encodeURIComponent(window.location.href);
+      const targetUrl = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = targetUrl;
+        } else {
+          window.location.href = targetUrl;
+        }
+      } catch (_) {
+        window.location.href = targetUrl;
+      }
+    };
+    window.redirectToTsdcSso = window.redirectToSso;
+
+    // When a user isn't logged in on your portal, redirect them to the SSO gateway:
+    if (!isTsdcAuthenticated && !isInsideIframe) {
+      const returnUrl = encodeURIComponent(window.location.href);
+      window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
+    }
+
+    window.getTsdcUser = function() {
+      const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token');
+      if (!token) return null;
+
+      let uid = sessionStorage.getItem('tsdc_uid') || localStorage.getItem('tsdc_uid') || '';
+      let email = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || '';
+      let name = '';
+
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))));
+          if (!uid) uid = payload.user_id || payload.uid || payload.sub;
+          if (!email) email = payload.email || '';
+          name = payload.name || payload.display_name || (email ? email.split('@')[0] : '');
+        }
+      } catch (_) {}
+
+      const cleanUid = uid || (email ? 'tsdc_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 20) : 'tsdc_user_' + Date.now());
+      const cleanEmail = email || 'user@tsdc.in';
+      const cleanName = name || (cleanEmail.includes('@') ? cleanEmail.split('@')[0] : 'TSDC User');
+
+      return {
+        uid: cleanUid,
+        email: cleanEmail,
+        displayName: cleanName,
+        getIdToken: async () => token,
+        isTsdc: true
+      };
+    };
+
+    window.simulateTsdcLogin = function() {
+      const mockEmail = 'dev@tsdc.in';
+      const mockUid = 'tsdc_dev_user_01';
+      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+      const payload = btoa(JSON.stringify({
+        sub: mockUid,
+        user_id: mockUid,
+        email: mockEmail,
+        name: "TSDC Developer",
+        iss: "https://auth.tsdc.in",
+        exp: Math.floor(Date.now() / 1000) + 86400
+      }));
+      const mockToken = `${header}.${payload}.simulated_signature`;
+
+      sessionStorage.setItem('tsdc_token', mockToken);
+      sessionStorage.setItem('tsdc_email', mockEmail);
+      sessionStorage.setItem('tsdc_uid', mockUid);
+      localStorage.setItem('tsdc_token', mockToken);
+      localStorage.setItem('tsdc_email', mockEmail);
+      localStorage.setItem('tsdc_uid', mockUid);
+
+      window.showToast(`Signed in with simulated TSDC SSO (${mockEmail})`);
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    };
+
+    window.toggleLocalAuthAccordion = function() {
+      const container = document.getElementById('localAuthContainer');
+      if (container) container.classList.toggle('hidden');
+    };
 
     // Application state
     let auth = null;
@@ -2356,6 +2528,8 @@
       return base ? `${base}${cleanPath}` : cleanPath;
     };
 
+    window.isBackendConnected = false;
+
     window.updateBackendStatusBadge = async function(livePing = false) {
       const pill = document.getElementById('headerBackendPill');
       const dot = document.getElementById('headerBackendDot');
@@ -2363,6 +2537,7 @@
       const bannerBadge = document.getElementById('backendBadge');
       const endpointDisplay = document.getElementById('backendEndpointDisplay');
       const statusIcon = document.getElementById('backendStatusIcon');
+      const offlineAlert = document.getElementById('backendOfflineAlert');
 
       const customUrl = window.getBackendUrl();
       const isStatic = window.isStaticHost();
@@ -2387,38 +2562,40 @@
         }
       }
 
-      if (livePing || (!isStatic && !customUrl)) {
-        try {
-          const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors' }).catch(() => null);
-          if (testRes && testRes.ok) {
-            if (dot) dot.style.background = 'var(--success)';
-            if (text) text.textContent = 'BACKEND: ONLINE';
-            if (bannerBadge) {
-              bannerBadge.textContent = 'ONLINE';
-              bannerBadge.style.background = 'var(--success-soft)';
-              bannerBadge.style.color = 'var(--success)';
-            }
-            if (statusIcon) {
-              statusIcon.style.background = 'var(--success-soft)';
-              statusIcon.style.color = 'var(--wa-teal)';
-            }
-            return true;
+      try {
+        const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors' }).catch(() => null);
+        if (testRes && testRes.ok) {
+          window.isBackendConnected = true;
+          if (dot) dot.style.background = 'var(--success)';
+          if (text) text.textContent = customUrl ? 'BACKEND: ONLINE (CUSTOM)' : 'BACKEND: ONLINE';
+          if (bannerBadge) {
+            bannerBadge.textContent = 'ONLINE';
+            bannerBadge.style.background = 'var(--success-soft)';
+            bannerBadge.style.color = 'var(--success)';
           }
-        } catch (_) {}
+          if (statusIcon) {
+            statusIcon.style.background = 'var(--success-soft)';
+            statusIcon.style.color = 'var(--wa-teal)';
+          }
+          if (offlineAlert) offlineAlert.style.display = 'none';
+          return true;
+        }
+      } catch (_) {}
 
-        if (dot) dot.style.background = isStatic ? 'var(--danger)' : 'var(--warning)';
-        if (text) text.textContent = isStatic ? 'BACKEND: NOT FOUND' : 'BACKEND: OFFLINE';
-        if (bannerBadge) {
-          bannerBadge.textContent = isStatic ? 'OFFLINE (STATIC HOST)' : 'OFFLINE';
-          bannerBadge.style.background = 'var(--warning-soft)';
-          bannerBadge.style.color = 'var(--warning)';
-        }
-        if (statusIcon) {
-          statusIcon.style.background = 'var(--warning-soft)';
-          statusIcon.style.color = 'var(--warning)';
-        }
-        return false;
+      window.isBackendConnected = false;
+      if (dot) dot.style.background = isStatic ? 'var(--danger)' : 'var(--warning)';
+      if (text) text.textContent = isStatic ? 'BACKEND: NOT FOUND' : 'BACKEND: OFFLINE';
+      if (bannerBadge) {
+        bannerBadge.textContent = isStatic ? 'OFFLINE (STATIC HOST)' : 'OFFLINE';
+        bannerBadge.style.background = 'var(--warning-soft)';
+        bannerBadge.style.color = 'var(--warning)';
       }
+      if (statusIcon) {
+        statusIcon.style.background = 'var(--warning-soft)';
+        statusIcon.style.color = 'var(--warning)';
+      }
+      if (offlineAlert) offlineAlert.style.display = 'block';
+      return false;
     };
 
     window.openBackendConfigModal = function() {
@@ -2542,6 +2719,28 @@
           }
         }
 
+        // 1. Check if user is authenticated via TSDC SSO session
+        const tsdcUser = window.getTsdcUser();
+        if (tsdcUser) {
+          currentUser = tsdcUser;
+          document.getElementById('authOverlay').classList.add('hidden');
+          try {
+            const token = await currentUser.getIdToken();
+            await signInWithCustomToken(auth, token);
+          } catch (_) {}
+          await loadUserProfile(currentUser);
+          setupFirestoreListeners(currentUser.uid);
+          window.fetchStatus();
+          return;
+        }
+
+        // 2. Part A: Redirect unauthenticated users to auth.tsdc.in
+        if (!isInsideIframe) {
+          console.log("Unauthenticated on portal - redirecting to auth.tsdc.in");
+          window.redirectToSso();
+          return;
+        }
+
         onAuthStateChanged(auth, async user => {
           if (user) {
             currentUser = user;
@@ -2550,11 +2749,25 @@
             setupFirestoreListeners(user.uid);
             window.fetchStatus();
           } else {
+            const currentTsdc = window.getTsdcUser();
+            if (currentTsdc) {
+              currentUser = currentTsdc;
+              document.getElementById('authOverlay').classList.add('hidden');
+              await loadUserProfile(currentTsdc);
+              setupFirestoreListeners(currentTsdc.uid);
+              window.fetchStatus();
+              return;
+            }
+
             currentUser = null;
             if (unsubscribeContacts) unsubscribeContacts();
             if (unsubscribeReports) unsubscribeReports();
             if (unsubscribeLists) unsubscribeLists();
             document.getElementById('authOverlay').classList.remove('hidden');
+
+            if (!isInsideIframe) {
+              window.redirectToSso();
+            }
           }
         });
       } catch (err) {
@@ -2566,23 +2779,28 @@
     // Load & Save User Profile in Firestore
     async function loadUserProfile(user) {
       try {
-        const userRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(userRef);
-        let data = {};
-        if (snap.exists()) {
-          data = snap.data();
-        } else {
-          data = {
-            id: user.uid,
-            name: user.displayName || user.email.split('@')[0],
-            email: user.email,
-            company: '',
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(userRef, data);
+        let name = user.displayName || (user.email ? user.email.split('@')[0] : 'TSDC User');
+        let company = '';
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.name) name = data.name;
+            if (data.company) company = data.company;
+          } else {
+            await setDoc(userRef, {
+              id: user.uid,
+              name,
+              email: user.email,
+              company: '',
+              createdAt: new Date().toISOString()
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.warn('Firestore user profile notice:', e.message);
         }
 
-        const name = data.name || user.email.split('@')[0];
         const sideNameEl = document.getElementById('sideUserName');
         const sideEmailEl = document.getElementById('sideUserEmail');
         if (sideNameEl) {
@@ -2594,18 +2812,23 @@
           sideEmailEl.title = user.email;
         }
         const sideAvatarEl = document.getElementById('sideAvatar');
-        if (sideAvatarEl) sideAvatarEl.textContent = name.slice(0, 2).toUpperCase();
+        if (sideAvatarEl) sideAvatarEl.textContent = (name || 'US').slice(0, 2).toUpperCase();
         
         const deskOwnerEl = document.getElementById('sessionDeskOwner');
         if (deskOwnerEl) {
           deskOwnerEl.textContent = name ? `${name}'s Desk` : 'Personal Broadcast Desk';
         }
 
-        document.getElementById('profileName').value = name;
-        document.getElementById('profileEmail').value = user.email;
-        document.getElementById('profileCompany').value = data.company || '';
-        document.getElementById('profileUid').value = user.uid;
-        document.getElementById('profileEmailBadge').textContent = user.email;
+        const pName = document.getElementById('profileName');
+        const pEmail = document.getElementById('profileEmail');
+        const pComp = document.getElementById('profileCompany');
+        const pUid = document.getElementById('profileUid');
+        const pBadge = document.getElementById('profileEmailBadge');
+        if (pName) pName.value = name;
+        if (pEmail) pEmail.value = user.email;
+        if (pComp) pComp.value = company;
+        if (pUid) pUid.value = user.uid;
+        if (pBadge) pBadge.textContent = user.email;
       } catch (e) {
         console.error('Error loading profile:', e);
       }
@@ -2706,8 +2929,28 @@
 
     window.doLogout = async function() {
       try {
-        await signOut(auth);
+        sessionStorage.removeItem('tsdc_token');
+        sessionStorage.removeItem('tsdc_email');
+        sessionStorage.removeItem('tsdc_uid');
+        localStorage.removeItem('tsdc_token');
+        localStorage.removeItem('tsdc_email');
+        localStorage.removeItem('tsdc_uid');
+        if (auth) {
+          try { await signOut(auth); } catch (_) {}
+        }
+        currentUser = null;
+        if (unsubscribeContacts) unsubscribeContacts();
+        if (unsubscribeReports) unsubscribeReports();
+        if (unsubscribeLists) unsubscribeLists();
         window.showToast('Signed out of desk.');
+        document.getElementById('authOverlay').classList.remove('hidden');
+
+        // If on tsdc.in portal, redirect to SSO gateway
+        if (window.isTsdcDomain()) {
+          setTimeout(() => {
+            window.redirectToSso();
+          }, 600);
+        }
       } catch (err) {
         window.showToast(err.message, true);
       }
@@ -3890,29 +4133,45 @@
     }
 
     window.requestConnect = async function() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        window.showToast('Please sign in first via TSDC SSO.', true);
+        return;
+      }
       try {
         window.showToast('Initiating WhatsApp pairing…');
         const token = await currentUser.getIdToken();
-        const res = await fetch(window.getApiUrl('/api/whatsapp/connect'), {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const targetUrl = window.getApiUrl('/api/whatsapp/connect');
+        
+        let res;
+        try {
+          res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch (netErr) {
+          window.isBackendConnected = false;
+          window.updateBackendStatusBadge(false);
+          setTimeout(window.openBackendConfigModal, 400);
+          throw new Error(`Cannot reach WhatsApp backend at ${targetUrl}. Cloudflare Pages cannot run Node.js. Please enter your Render backend URL.`);
+        }
+
         if (!res.ok) {
           let errData = {};
           try { errData = await res.json(); } catch (_) {}
-          const isStatic = window.isStaticHost();
-          const targetUrl = window.getApiUrl('/api/whatsapp/connect');
+          window.isBackendConnected = false;
+          window.updateBackendStatusBadge(false);
+          setTimeout(window.openBackendConfigModal, 400);
+
           const errorMsg = errData.error || (
-            isStatic && !window.getBackendUrl()
-              ? 'WhatsApp backend server is not reachable on Cloudflare Pages. Please connect your running Node.js server (server.js) using the Backend Settings.'
-              : `WhatsApp backend server is not available at ${targetUrl}. Please ensure node server.js is running.`
+            !window.getBackendUrl()
+              ? 'WhatsApp backend is not available on this host (Cloudflare Pages is static-only). Please connect your Node.js backend (Render URL) in Settings.'
+              : `WhatsApp backend returned HTTP ${res.status} at ${targetUrl}. Please ensure node server.js is running.`
           );
-          if (isStatic && !window.getBackendUrl()) {
-            setTimeout(window.openBackendConfigModal, 600);
-          }
           throw new Error(errorMsg);
         }
+
+        window.isBackendConnected = true;
+        window.updateBackendStatusBadge(false);
         setTimeout(window.fetchStatus, 1500);
       } catch (err) {
         window.showToast(err.message, true);
