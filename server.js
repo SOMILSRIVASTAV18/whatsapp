@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-User-Email, X-TSDC-Token');
   res.header('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
@@ -103,9 +103,11 @@ function getWaState(userId) {
   return userWaStates.get(userId);
 }
 
-// Authentication Middleware via Firebase ID Token
+// Authentication Middleware via Firebase ID Token / TSDC SSO
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization || '';
+  const tsdcEmail = req.headers['x-user-email'] || req.query.email || '';
+  const tsdcApiKey = req.headers['x-tsdc-token'] || '';
   let token = null;
 
   if (authHeader.startsWith('Bearer ')) {
@@ -113,7 +115,16 @@ async function authMiddleware(req, res, next) {
   }
 
   if (!token) {
-    return res.status(401).json({ error: 'Authentication required. Please sign in with Firebase.' });
+    // Allow TSDC service/header authentication to flow into requireBroadcastAccess
+    if (tsdcEmail || tsdcApiKey) {
+      const cleanEmail = String(tsdcEmail || '').trim();
+      req.user = {
+        uid: cleanEmail ? 'tsdc_' + Buffer.from(cleanEmail).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20) : 'tsdc_api_user',
+        email: cleanEmail
+      };
+      return next();
+    }
+    return res.status(401).json({ error: 'Authentication required via auth.tsdc.in' });
   }
 
   try {
@@ -141,12 +152,62 @@ async function authMiddleware(req, res, next) {
 
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email || ''
+      email: decodedToken.email || String(tsdcEmail || '').trim()
     };
     next();
   } catch (err) {
     console.error('Auth verification failed:', err.message);
-    return res.status(401).json({ error: 'Invalid or expired Firebase session. Please sign in again.' });
+    return res.status(401).json({ error: 'Invalid or expired session. Please sign in again via auth.tsdc.in.' });
+  }
+}
+
+// Express middleware for Broadcast (broadcast.tsdc.in)
+// Enforces HTTP 403 SUBSCRIPTION_EXPIRED, SUBSCRIPTION_SUSPENDED, or NO_ACTIVE_SUBSCRIPTION
+async function requireBroadcastAccess(req, res, next) {
+  const userEmail = req.headers['x-user-email'] || req.query.email || (req.user && req.user.email);
+  const apiKey = req.headers['x-tsdc-token'];
+  const authHeader = req.headers.authorization || '';
+
+  if (!userEmail && !apiKey) {
+    return res.status(401).json({ error: 'Authentication required via auth.tsdc.in' });
+  }
+
+  try {
+    const params = new URLSearchParams({ serviceId: 'broadcast' });
+    if (userEmail) params.set('email', String(userEmail));
+
+    const checkHeaders = {};
+    if (apiKey) {
+      checkHeaders['X-TSDC-Token'] = String(apiKey);
+    }
+    if (authHeader) {
+      checkHeaders['Authorization'] = authHeader;
+    }
+
+    const checkRes = await fetch(`https://apps.tsdc.in/api/check-access?${params.toString()}`, {
+      headers: checkHeaders
+    });
+    const payload = await checkRes.json().catch(() => ({}));
+
+    if (!checkRes.ok || !payload.allowed) {
+      // Returns 403 SUBSCRIPTION_EXPIRED, SUBSCRIPTION_SUSPENDED, or NO_ACTIVE_SUBSCRIPTION
+      return res.status(403).json({
+        allowed: false,
+        status: payload.status || 'inactive',
+        code: payload.code || 'NO_ACTIVE_SUBSCRIPTION',
+        message: payload.message || 'Your Broadcast subscription is expired, suspended, or inactive.',
+        salesEmail: 'sales@tsdc.in',
+        appsUrl: 'https://apps.tsdc.in'
+      });
+    }
+
+    req.tsdcSubscription = payload;
+    next();
+  } catch (err) {
+    console.error('Subscription check error:', err.message);
+    return res.status(503).json({
+      error: 'Unable to verify Broadcast subscription status with apps.tsdc.in.'
+    });
   }
 }
 
@@ -310,7 +371,7 @@ async function startUserWhatsApp(userId) {
 }
 
 // WhatsApp status endpoint
-app.get('/api/status', authMiddleware, (req, res) => {
+app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
   const state = getWaState(req.user.uid);
   res.json({
     status: state.status,
@@ -324,13 +385,13 @@ app.get('/api/status', authMiddleware, (req, res) => {
 });
 
 // Trigger pairing
-app.post('/api/whatsapp/connect', authMiddleware, async (req, res) => {
+app.post('/api/whatsapp/connect', authMiddleware, requireBroadcastAccess, async (req, res) => {
   startUserWhatsApp(req.user.uid);
   res.json({ ok: true, message: 'WhatsApp pairing started. Waiting for QR code…' });
 });
 
 // Disconnect pairing
-app.post('/api/whatsapp/disconnect', authMiddleware, async (req, res) => {
+app.post('/api/whatsapp/disconnect', authMiddleware, requireBroadcastAccess, async (req, res) => {
   const userId = req.user.uid;
   const client = userClients.get(userId);
   if (client) {
@@ -347,7 +408,7 @@ app.post('/api/whatsapp/disconnect', authMiddleware, async (req, res) => {
 });
 
 // CSV Contact Import Helper
-app.post('/api/contacts/parse-csv', authMiddleware, upload.single('file'), (req, res) => {
+app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Please choose a CSV file.' });
   if (!/\.csv$/i.test(req.file.originalname)) {
     return res.status(400).json({ error: 'Please upload a CSV file (.csv).' });
@@ -378,7 +439,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, upload.single('file'), (req,
 // ==========================================
 // REAL CAMPAIGN BROADCAST (With Media Support)
 // ==========================================
-app.post('/api/send', authMiddleware, async (req, res) => {
+app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) => {
   const userId = req.user.uid;
   const state = getWaState(userId);
   const client = userClients.get(userId);

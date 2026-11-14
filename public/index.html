@@ -1481,6 +1481,21 @@
       <!-- VIEW CONTENT CONTAINER -->
       <div class="view-content">
 
+        <!-- 3-DAY PRE-EXPIRY WARNING BANNER -->
+        <div id="tsdcSubscriptionWarningBanner" class="hidden" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #92400e; font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <strong style="color: #78350f;">Subscription Expiring Soon:</strong>
+              <span id="tsdcSubscriptionWarningText">Your Broadcast subscription will expire soon.</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <a href="https://apps.tsdc.in" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background: #d97706; color: white; border: none; text-decoration: none; font-weight: 600;">Renew at apps.tsdc.in</a>
+            <button type="button" onclick="document.getElementById('tsdcSubscriptionWarningBanner').classList.add('hidden')" style="background: none; border: none; color: #92400e; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px;" title="Dismiss">&times;</button>
+          </div>
+        </div>
+
         <!-- 1. CAMPAIGN COMPOSER SECTION -->
         <section id="section-composer" class="tab-section active">
           <!-- Metrics Strip -->
@@ -2320,38 +2335,45 @@
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
     // ==========================================
-    // TSDC SSO GATEWAY AUTHENTICATION (auth.tsdc.in)
+    // TSDC SSO GATEWAY & SUBSCRIPTION ENTRY GUARD (broadcast.tsdc.in)
     // ==========================================
-    // B. Read the session token when auth.tsdc.in redirects back
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const queryParams = new URLSearchParams(window.location.search);
-    const idToken = hashParams.get('id_token') || queryParams.get('id_token');
-    const userEmail = hashParams.get('email') || queryParams.get('email');
-    const userId = hashParams.get('uid') || queryParams.get('uid');
-
-    if (idToken) {
-      // 1. Store token in session
-      sessionStorage.setItem('tsdc_token', idToken);
-      localStorage.setItem('tsdc_token', idToken);
-      if (userEmail) {
-        sessionStorage.setItem('tsdc_email', userEmail);
-        localStorage.setItem('tsdc_email', userEmail);
-      }
-      if (userId) {
-        sessionStorage.setItem('tsdc_uid', userId);
-        localStorage.setItem('tsdc_uid', userId);
-      }
-
-      // 2. Clean up the URL bar
-      window.history.replaceState(null, '', window.location.pathname);
-
-      console.log(`Successfully signed in via TSDC SSO as ${userEmail || userId || 'authenticated user'}`);
-    }
-
+    const SERVICE_ID = 'broadcast';
+    const GATEWAY_URL = 'https://apps.tsdc.in';
     const isInsideIframe = window.self !== window.top;
-    const isTsdcAuthenticated = Boolean(sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token'));
 
-    // A. Redirect unauthenticated users to auth.tsdc.in
+    window.isTsdcDomain = function() {
+      return window.location.hostname.endsWith('tsdc.in');
+    };
+
+    window.renderSubscriptionBlocked = function(access = {}) {
+      const isSuspended = access.status === 'suspended' || access.code === 'SUBSCRIPTION_SUSPENDED';
+      const title = isSuspended ? 'Subscription Suspended' : 'Subscription Expired or Inactive';
+      const safeMsg = escapeHtml(access.message || 'Your Broadcast subscription is expired, suspended, or missing.');
+      const safeCode = escapeHtml(access.code || 'ACCESS_DENIED');
+
+      window.__tsdcAccessBlocked = true;
+      document.body.innerHTML = `
+        <div style="font-family:sans-serif;max-width:460px;margin:80px auto;padding:24px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,0.06);">
+          <div style="display:inline-block;padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:700;margin-bottom:12px;background:${isSuspended ? '#fef2f2' : '#fffbeb'};color:${isSuspended ? '#dc2626' : '#d97706'};border:1px solid ${isSuspended ? '#fecaca' : '#fde68a'};">${safeCode}</div>
+          <h2 style="margin:0 0 8px;color:#0f172a;">${title}</h2>
+          <p style="color:#475569;font-size:14px;line-height:1.5;margin:0 0 14px;">${safeMsg}</p>
+          <p style="font-size:13px;color:#0f172a;margin:0 0 18px;">Contact <strong>sales@tsdc.in</strong> or visit <a href="https://apps.tsdc.in" style="color:#008069;font-weight:600;">apps.tsdc.in</a>.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #f1f5f9;">
+            <a href="https://apps.tsdc.in" style="background:#008069;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;">Open apps.tsdc.in</a>
+            <button type="button" onclick="sessionStorage.clear();localStorage.removeItem('tsdc_token');localStorage.removeItem('tsdc_email');localStorage.removeItem('tsdc_uid');window.redirectToSso();" style="background:#f8fafc;color:#334155;border:1px solid #cbd5e1;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Sign Out / Switch Account</button>
+          </div>
+        </div>`;
+    };
+
+    window.showSubscriptionExpiryWarning = function(warningText) {
+      const banner = document.getElementById('tsdcSubscriptionWarningBanner');
+      const textEl = document.getElementById('tsdcSubscriptionWarningText');
+      if (banner && textEl && warningText) {
+        textEl.textContent = warningText;
+        banner.classList.remove('hidden');
+      }
+    };
+
     window.redirectToSso = function() {
       const returnUrl = encodeURIComponent(window.location.href);
       const targetUrl = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
@@ -2367,18 +2389,113 @@
     };
     window.redirectToTsdcSso = window.redirectToSso;
 
-    // When a user isn't logged in on your portal, redirect them to the SSO gateway:
-    if (!isTsdcAuthenticated && !isInsideIframe) {
-      const returnUrl = encodeURIComponent(window.location.href);
-      window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
-    }
+    window.verifyBroadcastSubscription = async function(token, userEmail) {
+      if (!token || !userEmail) return false;
+      const res = await fetch(
+        `${GATEWAY_URL}/api/check-access?serviceId=${encodeURIComponent(SERVICE_ID)}&email=${encodeURIComponent(userEmail)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.status === 401) {
+        sessionStorage.removeItem('tsdc_token');
+        sessionStorage.removeItem('tsdc_email');
+        sessionStorage.removeItem('tsdc_uid');
+        localStorage.removeItem('tsdc_token');
+        localStorage.removeItem('tsdc_email');
+        localStorage.removeItem('tsdc_uid');
+        if (!isInsideIframe) {
+          const returnUrl = encodeURIComponent(window.location.href);
+          window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
+        }
+        return false;
+      }
+
+      const access = await res.json();
+
+      if (!access.allowed) {
+        // Handle expired, suspended, or missing subscription
+        window.renderSubscriptionBlocked(access);
+        throw new Error(`Access denied (${access.code})`);
+      }
+
+      window.tsdcSubscriptionAccess = access;
+      // Optional: show 3-day pre-expiry warning inside broadcast.tsdc.in
+      if (access.expiringSoon && access.warning) {
+        console.warn('[TSDC Subscription Alert]', access.warning);
+        window.showSubscriptionExpiryWarning(access.warning);
+      }
+      return true;
+    };
+
+    // Website Entry Guard for Broadcast (broadcast.tsdc.in) - runs on every page visit
+    window.protectBroadcastPromise = (async function protect_broadcast() {
+      // 1. Read SSO return hash from auth.tsdc.in if returning from login
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = new URLSearchParams(window.location.search);
+      const hashToken = hashParams.get('id_token') || queryParams.get('id_token');
+      let hashEmail = hashParams.get('email') || queryParams.get('email');
+      const hashUid = hashParams.get('uid') || queryParams.get('uid');
+
+      if (hashToken && !hashEmail) {
+        try {
+          const parts = hashToken.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))));
+            hashEmail = payload.email || payload.user_email || '';
+          }
+        } catch (_) {}
+      }
+
+      if (hashToken && hashEmail) {
+        sessionStorage.setItem('tsdc_token', hashToken);
+        sessionStorage.setItem('tsdc_email', hashEmail);
+        localStorage.setItem('tsdc_token', hashToken);
+        localStorage.setItem('tsdc_email', hashEmail);
+        if (hashUid) {
+          sessionStorage.setItem('tsdc_uid', hashUid);
+          localStorage.setItem('tsdc_uid', hashUid);
+        }
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        console.log(`Successfully signed in via TSDC SSO as ${hashEmail}`);
+      } else if (hashToken) {
+        sessionStorage.setItem('tsdc_token', hashToken);
+        localStorage.setItem('tsdc_token', hashToken);
+        if (hashUid) {
+          sessionStorage.setItem('tsdc_uid', hashUid);
+          localStorage.setItem('tsdc_uid', hashUid);
+        }
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+
+      const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token');
+      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email');
+
+      // 2. Redirect unauthenticated visitors to auth.tsdc.in
+      if (!token || !userEmail) {
+        if (!isInsideIframe) {
+          const returnUrl = encodeURIComponent(window.location.href);
+          window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
+        }
+        return false;
+      }
+
+      // 3. Verify active subscription for "Broadcast" on every visit
+      try {
+        return await window.verifyBroadcastSubscription(token, userEmail);
+      } catch (err) {
+        if (err && String(err.message || '').startsWith('Access denied')) {
+          throw err;
+        }
+        console.warn('[TSDC Subscription Check] Gateway verification error:', err.message || err);
+        return true;
+      }
+    })();
 
     window.getTsdcUser = function() {
       const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token');
-      if (!token) return null;
+      const email = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || '';
+      if (!token || !email) return null;
 
       let uid = sessionStorage.getItem('tsdc_uid') || localStorage.getItem('tsdc_uid') || '';
-      let email = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || '';
       let name = '';
 
       try {
@@ -2386,13 +2503,12 @@
         if (parts.length === 3) {
           const payload = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))));
           if (!uid) uid = payload.user_id || payload.uid || payload.sub;
-          if (!email) email = payload.email || '';
           name = payload.name || payload.display_name || (email ? email.split('@')[0] : '');
         }
       } catch (_) {}
 
       const cleanUid = uid || (email ? 'tsdc_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 20) : 'tsdc_user_' + Date.now());
-      const cleanEmail = email || 'user@tsdc.in';
+      const cleanEmail = email;
       const cleanName = name || (cleanEmail.includes('@') ? cleanEmail.split('@')[0] : 'TSDC User');
 
       return {
@@ -2402,6 +2518,18 @@
         getIdToken: async () => token,
         isTsdc: true
       };
+    };
+
+    window.getAuthHeaders = async function(extraHeaders = {}) {
+      const headers = { ...extraHeaders };
+      let token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token') || '';
+      if (!token && currentUser && typeof currentUser.getIdToken === 'function') {
+        try { token = await currentUser.getIdToken(); } catch (_) {}
+      }
+      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || (currentUser && currentUser.email) || '';
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (userEmail) headers['X-User-Email'] = userEmail;
+      return headers;
     };
 
     window.simulateTsdcLogin = function() {
@@ -2706,6 +2834,15 @@
     // Initialize Firebase SDK
     async function initFirebase() {
       try {
+        try {
+          const allowed = await window.protectBroadcastPromise;
+          if (window.__tsdcAccessBlocked) return;
+          if (!allowed && !isInsideIframe) return;
+        } catch (guardErr) {
+          console.error(guardErr.message);
+          return;
+        }
+
         const config = await resolveFirebaseConfig();
         const app = initializeApp(config);
         auth = getAuth(app);
@@ -2734,7 +2871,7 @@
           return;
         }
 
-        // 2. Part A: Redirect unauthenticated users to auth.tsdc.in
+        // 2. Redirect unauthenticated users to auth.tsdc.in
         if (!isInsideIframe) {
           console.log("Unauthenticated on portal - redirecting to auth.tsdc.in");
           window.redirectToSso();
@@ -2743,6 +2880,20 @@
 
         onAuthStateChanged(auth, async user => {
           if (user) {
+            try {
+              const fbToken = await user.getIdToken();
+              if (user.email) {
+                sessionStorage.setItem('tsdc_token', fbToken);
+                sessionStorage.setItem('tsdc_email', user.email);
+                sessionStorage.setItem('tsdc_uid', user.uid);
+                await window.verifyBroadcastSubscription(fbToken, user.email).catch(err => {
+                  if (err && String(err.message || '').startsWith('Access denied')) throw err;
+                });
+              }
+            } catch (guardErr) {
+              if (guardErr && String(guardErr.message || '').startsWith('Access denied')) return;
+            }
+
             currentUser = user;
             document.getElementById('authOverlay').classList.add('hidden');
             await loadUserProfile(user);
@@ -2945,8 +3096,8 @@
         window.showToast('Signed out of desk.');
         document.getElementById('authOverlay').classList.remove('hidden');
 
-        // If on tsdc.in portal, redirect to SSO gateway
-        if (window.isTsdcDomain()) {
+        // Redirect to SSO gateway when running outside iframe
+        if (!isInsideIframe || window.isTsdcDomain()) {
           setTimeout(() => {
             window.redirectToSso();
           }, 600);
@@ -3549,12 +3700,19 @@
 
         // Try backend parser first
         try {
-          const token = await currentUser.getIdToken();
+          const authHeaders = await window.getAuthHeaders();
           const res = await fetch(window.getApiUrl('/api/contacts/parse-csv'), {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: authHeaders,
             body: formData
           });
+          if (res.status === 403) {
+            const errData = await res.json().catch(() => ({}));
+            if (errData.allowed === false) {
+              window.renderSubscriptionBlocked(errData);
+              return;
+            }
+          }
           if (res.ok) {
             const data = await res.json();
             contacts = data.contacts || [];
@@ -3919,13 +4077,10 @@
       btn.textContent = 'Submitting Batch…';
 
       try {
-        const token = await currentUser.getIdToken();
+        const authHeaders = await window.getAuthHeaders({ 'Content-Type': 'application/json' });
         const res = await fetch(window.getApiUrl('/api/send'), {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: authHeaders,
           body: JSON.stringify({
             contacts: pendingBatch.contacts.map(c => ({ name: c.name, phone: c.phone })),
             message: pendingBatch.message,
@@ -3943,13 +4098,17 @@
         } catch (_) {}
 
         if (!res.ok) {
+          if (res.status === 403 && data.allowed === false) {
+            window.renderSubscriptionBlocked(data);
+            throw new Error(data.message || `Access denied (${data.code || 'SUBSCRIPTION_INACTIVE'})`);
+          }
           if (res.status === 404 || !res.status) {
             if (window.isStaticHost() && !window.getBackendUrl()) {
               setTimeout(window.openBackendConfigModal, 800);
             }
             throw new Error(`WhatsApp backend route (${window.getApiUrl('/api/send')}) is not reachable on this host. Run the Node.js backend server (server.js) to broadcast.`);
           }
-          throw new Error(data.error || `Server returned error (${res.status})`);
+          throw new Error(data.error || data.message || `Server returned error (${res.status})`);
         }
 
         const campRef = doc(collection(db, 'users', currentUser.uid, 'campaigns'));
@@ -4059,12 +4218,19 @@
 
     // Real WhatsApp Session API Calls
     window.fetchStatus = async function() {
-      if (!currentUser) return;
+      if (!currentUser || window.__tsdcAccessBlocked) return;
       try {
-        const token = await currentUser.getIdToken();
+        const authHeaders = await window.getAuthHeaders();
         const res = await fetch(window.getApiUrl('/api/status'), {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: authHeaders
         });
+        if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.allowed === false) {
+            window.renderSubscriptionBlocked(errData);
+            return;
+          }
+        }
         if (!res.ok) {
           updateStatusUI({ status: 'disconnected', message: window.isStaticHost() && !window.getBackendUrl() ? 'Cloudflare Pages detected. Connect your Node.js backend (server.js) to pair WhatsApp.' : 'Ready in standalone Firebase mode.' });
           return;
@@ -4139,14 +4305,14 @@
       }
       try {
         window.showToast('Initiating WhatsApp pairing…');
-        const token = await currentUser.getIdToken();
+        const authHeaders = await window.getAuthHeaders();
         const targetUrl = window.getApiUrl('/api/whatsapp/connect');
         
         let res;
         try {
           res = await fetch(targetUrl, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: authHeaders
           });
         } catch (netErr) {
           window.isBackendConnected = false;
@@ -4158,6 +4324,12 @@
         if (!res.ok) {
           let errData = {};
           try { errData = await res.json(); } catch (_) {}
+
+          if (res.status === 403 && errData.allowed === false) {
+            window.renderSubscriptionBlocked(errData);
+            throw new Error(errData.message || `Access denied (${errData.code || 'SUBSCRIPTION_INACTIVE'})`);
+          }
+
           window.isBackendConnected = false;
           window.updateBackendStatusBadge(false);
           setTimeout(window.openBackendConfigModal, 400);
@@ -4181,11 +4353,18 @@
     window.requestDisconnect = async function() {
       if (!currentUser) return;
       try {
-        const token = await currentUser.getIdToken();
+        const authHeaders = await window.getAuthHeaders();
         const res = await fetch(window.getApiUrl('/api/whatsapp/disconnect'), {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: authHeaders
         });
+        if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.allowed === false) {
+            window.renderSubscriptionBlocked(errData);
+            throw new Error(errData.message || `Access denied (${errData.code || 'SUBSCRIPTION_INACTIVE'})`);
+          }
+        }
         if (!res.ok) {
           throw new Error(`WhatsApp backend server is not available at ${window.getApiUrl('/api/whatsapp/disconnect')}.`);
         }
@@ -4197,7 +4376,7 @@
     };
 
     setInterval(() => {
-      if (currentUser) window.fetchStatus();
+      if (currentUser && !window.__tsdcAccessBlocked) window.fetchStatus();
     }, 6000);
 
     window.updateBackendStatusBadge(true);
