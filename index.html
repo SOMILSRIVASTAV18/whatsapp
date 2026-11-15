@@ -2633,19 +2633,29 @@
       return h.endsWith('.pages.dev') || h.endsWith('.workers.dev') || h.endsWith('.web.app') || h.endsWith('.firebaseapp.com') || h.endsWith('.netlify.app') || h.endsWith('.vercel.app');
     };
 
+    window.normalizeBackendUrl = function(raw) {
+      let val = String(raw || '').trim();
+      if (!val) return '';
+      if (!/^https?:\/\//i.test(val)) {
+        val = (val.startsWith('localhost') || val.startsWith('127.0.0.1')) ? `http://${val}` : `https://${val}`;
+      }
+      return val.replace(/\/api\/health\/?$/i, '').replace(/\/+$/, '');
+    };
+
     window.getBackendUrl = function() {
       const saved = localStorage.getItem('desk_backend_url');
       if (saved && saved.trim()) {
-        return saved.trim().replace(/\/+$/, '');
+        return window.normalizeBackendUrl(saved);
       }
       return '';
     };
 
     window.setBackendUrl = function(url) {
-      if (!url || !url.trim()) {
+      const clean = window.normalizeBackendUrl(url);
+      if (!clean) {
         localStorage.removeItem('desk_backend_url');
       } else {
-        localStorage.setItem('desk_backend_url', url.trim().replace(/\/+$/, ''));
+        localStorage.setItem('desk_backend_url', clean);
       }
       window.updateBackendStatusBadge();
     };
@@ -2692,21 +2702,25 @@
 
       try {
         const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors' }).catch(() => null);
-        if (testRes && testRes.ok) {
-          window.isBackendConnected = true;
-          if (dot) dot.style.background = 'var(--success)';
-          if (text) text.textContent = customUrl ? 'BACKEND: ONLINE (CUSTOM)' : 'BACKEND: ONLINE';
-          if (bannerBadge) {
-            bannerBadge.textContent = 'ONLINE';
-            bannerBadge.style.background = 'var(--success-soft)';
-            bannerBadge.style.color = 'var(--success)';
+        const ct = testRes ? (testRes.headers.get('content-type') || '') : '';
+        if (testRes && testRes.ok && ct.includes('application/json')) {
+          const json = await testRes.json().catch(() => null);
+          if (json && json.status === 'ok') {
+            window.isBackendConnected = true;
+            if (dot) dot.style.background = 'var(--success)';
+            if (text) text.textContent = customUrl ? 'BACKEND: ONLINE (CUSTOM)' : 'BACKEND: ONLINE';
+            if (bannerBadge) {
+              bannerBadge.textContent = 'ONLINE';
+              bannerBadge.style.background = 'var(--success-soft)';
+              bannerBadge.style.color = 'var(--success)';
+            }
+            if (statusIcon) {
+              statusIcon.style.background = 'var(--success-soft)';
+              statusIcon.style.color = 'var(--wa-teal)';
+            }
+            if (offlineAlert) offlineAlert.style.display = 'none';
+            return true;
           }
-          if (statusIcon) {
-            statusIcon.style.background = 'var(--success-soft)';
-            statusIcon.style.color = 'var(--wa-teal)';
-          }
-          if (offlineAlert) offlineAlert.style.display = 'none';
-          return true;
         }
       } catch (_) {}
 
@@ -2747,7 +2761,8 @@
 
     window.saveBackendConfig = async function() {
       const input = document.getElementById('inputBackendUrl');
-      const newUrl = input ? input.value.trim() : '';
+      const newUrl = input ? window.normalizeBackendUrl(input.value) : '';
+      if (input) input.value = newUrl;
       window.setBackendUrl(newUrl);
       window.closeBackendConfigModal();
       window.showToast('Backend server URL updated!');
@@ -2758,7 +2773,7 @@
     window.runBackendTest = async function(showToastAlert = false) {
       const input = document.getElementById('inputBackendUrl');
       const testUrl = (input && document.getElementById('backendConfigModal').classList.contains('hidden') === false)
-        ? input.value.trim().replace(/\/+$/, '')
+        ? window.normalizeBackendUrl(input.value)
         : window.getBackendUrl();
 
       const resultBox = document.getElementById('backendTestResult');
@@ -2772,9 +2787,13 @@
         const start = Date.now();
         const res = await fetch(endpoint, { method: 'GET', mode: 'cors' });
         const latency = Date.now() - start;
+        const ct = res.headers.get('content-type') || '';
 
-        if (res.ok) {
-          const json = await res.json().catch(() => ({}));
+        if (res.ok && ct.includes('application/json')) {
+          const json = await res.json().catch(() => null);
+          if (!json || json.status !== 'ok') {
+            throw new Error('Unexpected response format from /api/health.');
+          }
           const successMsg = `Connected successfully! Response time: ${latency}ms (Server: ${json.server || 'WhatsApp Desk'})`;
           if (resultBox) {
             resultBox.style.display = 'block';
@@ -2785,11 +2804,13 @@
           }
           if (showToastAlert) window.showToast(`✓ ${successMsg}`);
           window.updateBackendStatusBadge(true);
+        } else if (res.ok) {
+          throw new Error('Static host returned HTML instead of Node.js API JSON. Enter your Render server URL above.');
         } else {
           throw new Error(`Server returned HTTP ${res.status}: ${res.statusText}`);
         }
       } catch (err) {
-        const errorMsg = `Connection failed: ${err.message}. Make sure node server.js is running and CORS is enabled.`;
+        const errorMsg = `Connection failed: ${err.message}. Make sure your Render server is awake and running.`;
         if (resultBox) {
           resultBox.style.display = 'block';
           resultBox.style.background = 'var(--danger-soft)';
