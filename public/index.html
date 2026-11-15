@@ -2426,8 +2426,52 @@
       return true;
     };
 
-    // Website Entry Guard for Broadcast (broadcast.tsdc.in) - runs on every page visit
+    window.isSubscriptionDenial = function(status, data) {
+      return status === 403 && data && data.allowed === false && [
+        'SUBSCRIPTION_EXPIRED',
+        'SUBSCRIPTION_SUSPENDED',
+        'NO_ACTIVE_SUBSCRIPTION'
+      ].includes(data.code);
+    };
+
+    window.handleBackendSubscriptionDenial = async function(errData) {
+      let token = sessionStorage.getItem('tsdc_token') || '';
+      if (!token && currentUser && typeof currentUser.getIdToken === 'function') {
+        try { token = await currentUser.getIdToken(); } catch (_) {}
+      }
+      const userEmail = sessionStorage.getItem('tsdc_email') || (currentUser && currentUser.email) || '';
+      if (token && userEmail) {
+        try {
+          const verifyRes = await fetch(
+            `${GATEWAY_URL}/api/check-access?serviceId=${encodeURIComponent(SERVICE_ID)}&email=${encodeURIComponent(userEmail)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const verifyJson = await verifyRes.json().catch(() => null);
+          if (verifyJson && verifyJson.allowed === true) {
+            console.warn('[TSDC Guard] Backend returned 403, but apps.tsdc.in confirmed active access:', verifyJson);
+            if (!window.__warnedBackendSync) {
+              window.__warnedBackendSync = true;
+              window.showToast('Your TSDC subscription is active, but the connected backend server returned 403. Please redeploy your Render backend.', true);
+            }
+            return false;
+          }
+          if (verifyJson && verifyJson.allowed === false) {
+            window.renderSubscriptionBlocked(verifyJson);
+            return true;
+          }
+        } catch (_) {}
+      }
+      window.renderSubscriptionBlocked(errData);
+      return true;
+    };
+
+    // Website Entry Guard for WhatsApp Broadcast (broadcast.tsdc.in) - runs on every page visit
     window.protectBroadcastPromise = (async function protect_broadcast() {
+      // Clear any legacy localStorage SSO keys so stale dev tokens never override real SSO sessions
+      localStorage.removeItem('tsdc_token');
+      localStorage.removeItem('tsdc_email');
+      localStorage.removeItem('tsdc_uid');
+
       // 1. Read SSO return hash from auth.tsdc.in if returning from login
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const queryParams = new URLSearchParams(window.location.search);
@@ -2448,26 +2492,17 @@
       if (hashToken && hashEmail) {
         sessionStorage.setItem('tsdc_token', hashToken);
         sessionStorage.setItem('tsdc_email', hashEmail);
-        localStorage.setItem('tsdc_token', hashToken);
-        localStorage.setItem('tsdc_email', hashEmail);
-        if (hashUid) {
-          sessionStorage.setItem('tsdc_uid', hashUid);
-          localStorage.setItem('tsdc_uid', hashUid);
-        }
+        if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
         console.log(`Successfully signed in via TSDC SSO as ${hashEmail}`);
       } else if (hashToken) {
         sessionStorage.setItem('tsdc_token', hashToken);
-        localStorage.setItem('tsdc_token', hashToken);
-        if (hashUid) {
-          sessionStorage.setItem('tsdc_uid', hashUid);
-          localStorage.setItem('tsdc_uid', hashUid);
-        }
+        if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
 
-      const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token');
-      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email');
+      const token = sessionStorage.getItem('tsdc_token');
+      const userEmail = sessionStorage.getItem('tsdc_email');
 
       // 2. Redirect unauthenticated visitors to auth.tsdc.in
       if (!token || !userEmail) {
@@ -2478,7 +2513,7 @@
         return false;
       }
 
-      // 3. Verify active subscription for "Broadcast" on every visit
+      // 3. Verify active subscription for "WhatsApp Broadcast" on every visit
       try {
         return await window.verifyBroadcastSubscription(token, userEmail);
       } catch (err) {
@@ -2491,11 +2526,11 @@
     })();
 
     window.getTsdcUser = function() {
-      const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token');
-      const email = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || '';
+      const token = sessionStorage.getItem('tsdc_token');
+      const email = sessionStorage.getItem('tsdc_email') || '';
       if (!token || !email) return null;
 
-      let uid = sessionStorage.getItem('tsdc_uid') || localStorage.getItem('tsdc_uid') || '';
+      let uid = sessionStorage.getItem('tsdc_uid') || '';
       let name = '';
 
       try {
@@ -2522,11 +2557,11 @@
 
     window.getAuthHeaders = async function(extraHeaders = {}) {
       const headers = { ...extraHeaders };
-      let token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_token') || '';
+      let token = sessionStorage.getItem('tsdc_token') || '';
       if (!token && currentUser && typeof currentUser.getIdToken === 'function') {
         try { token = await currentUser.getIdToken(); } catch (_) {}
       }
-      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_email') || (currentUser && currentUser.email) || '';
+      const userEmail = sessionStorage.getItem('tsdc_email') || (currentUser && currentUser.email) || '';
       if (token) headers['Authorization'] = `Bearer ${token}`;
       if (userEmail) headers['X-User-Email'] = userEmail;
       return headers;
@@ -2549,9 +2584,6 @@
       sessionStorage.setItem('tsdc_token', mockToken);
       sessionStorage.setItem('tsdc_email', mockEmail);
       sessionStorage.setItem('tsdc_uid', mockUid);
-      localStorage.setItem('tsdc_token', mockToken);
-      localStorage.setItem('tsdc_email', mockEmail);
-      localStorage.setItem('tsdc_uid', mockUid);
 
       window.showToast(`Signed in with simulated TSDC SSO (${mockEmail})`);
       setTimeout(() => {
@@ -3708,9 +3740,9 @@
           });
           if (res.status === 403) {
             const errData = await res.json().catch(() => ({}));
-            if (errData.allowed === false) {
-              window.renderSubscriptionBlocked(errData);
-              return;
+            if (window.isSubscriptionDenial(res.status, errData)) {
+              const blocked = await window.handleBackendSubscriptionDenial(errData);
+              if (blocked) return;
             }
           }
           if (res.ok) {
@@ -4098,8 +4130,8 @@
         } catch (_) {}
 
         if (!res.ok) {
-          if (res.status === 403 && data.allowed === false) {
-            window.renderSubscriptionBlocked(data);
+          if (window.isSubscriptionDenial(res.status, data)) {
+            await window.handleBackendSubscriptionDenial(data);
             throw new Error(data.message || `Access denied (${data.code || 'SUBSCRIPTION_INACTIVE'})`);
           }
           if (res.status === 404 || !res.status) {
@@ -4226,9 +4258,9 @@
         });
         if (res.status === 403) {
           const errData = await res.json().catch(() => ({}));
-          if (errData.allowed === false) {
-            window.renderSubscriptionBlocked(errData);
-            return;
+          if (window.isSubscriptionDenial(res.status, errData)) {
+            const blocked = await window.handleBackendSubscriptionDenial(errData);
+            if (blocked) return;
           }
         }
         if (!res.ok) {
@@ -4325,8 +4357,8 @@
           let errData = {};
           try { errData = await res.json(); } catch (_) {}
 
-          if (res.status === 403 && errData.allowed === false) {
-            window.renderSubscriptionBlocked(errData);
+          if (window.isSubscriptionDenial(res.status, errData)) {
+            await window.handleBackendSubscriptionDenial(errData);
             throw new Error(errData.message || `Access denied (${errData.code || 'SUBSCRIPTION_INACTIVE'})`);
           }
 
@@ -4360,8 +4392,8 @@
         });
         if (res.status === 403) {
           const errData = await res.json().catch(() => ({}));
-          if (errData.allowed === false) {
-            window.renderSubscriptionBlocked(errData);
+          if (window.isSubscriptionDenial(res.status, errData)) {
+            await window.handleBackendSubscriptionDenial(errData);
             throw new Error(errData.message || `Access denied (${errData.code || 'SUBSCRIPTION_INACTIVE'})`);
           }
         }

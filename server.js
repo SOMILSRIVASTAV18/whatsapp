@@ -139,7 +139,7 @@ async function authMiddleware(req, res, next) {
       // Fallback for sandboxed network or SSO tokens if verifyIdToken fails: decode JWT payload safely
       const parts = token.split('.');
       if (parts.length === 3) {
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
         if (payload && (payload.user_id || payload.sub || payload.uid)) {
           decodedToken = {
             uid: payload.user_id || payload.sub || payload.uid,
@@ -161,45 +161,73 @@ async function authMiddleware(req, res, next) {
   }
 }
 
-// Express middleware for Broadcast (broadcast.tsdc.in)
+// Short-lived positive access cache (30s) to prevent gateway rate-limiting during 6s status polling
+const broadcastAccessCache = new Map();
+
+// Express middleware for WhatsApp Broadcast (broadcast.tsdc.in)
 // Enforces HTTP 403 SUBSCRIPTION_EXPIRED, SUBSCRIPTION_SUSPENDED, or NO_ACTIVE_SUBSCRIPTION
 async function requireBroadcastAccess(req, res, next) {
   const userEmail = req.headers['x-user-email'] || req.query.email || (req.user && req.user.email);
   const apiKey = req.headers['x-tsdc-token'];
-  const authHeader = req.headers.authorization || '';
 
   if (!userEmail && !apiKey) {
     return res.status(401).json({ error: 'Authentication required via auth.tsdc.in' });
   }
 
+  const cleanEmail = userEmail ? String(userEmail).trim() : '';
+  const cacheKey = `${cleanEmail.toLowerCase()}|${apiKey ? String(apiKey) : ''}`;
+  const cached = broadcastAccessCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    req.tsdcSubscription = cached.payload;
+    return next();
+  }
+
   try {
     const params = new URLSearchParams({ serviceId: 'broadcast' });
-    if (userEmail) params.set('email', String(userEmail));
+    if (cleanEmail) params.set('email', cleanEmail);
 
-    const checkHeaders = {};
+    const checkHeaders = {
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    };
     if (apiKey) {
       checkHeaders['X-TSDC-Token'] = String(apiKey);
-    }
-    if (authHeader) {
-      checkHeaders['Authorization'] = authHeader;
     }
 
     const checkRes = await fetch(`https://apps.tsdc.in/api/check-access?${params.toString()}`, {
       headers: checkHeaders
     });
-    const payload = await checkRes.json().catch(() => ({}));
+
+    const rawText = await checkRes.text();
+    let payload = null;
+    try {
+      payload = JSON.parse(rawText);
+    } catch (_) {
+      console.error(`TSDC check-access returned non-JSON (HTTP ${checkRes.status}):`, rawText.slice(0, 300));
+      return res.status(502).json({
+        error: 'Unable to verify Broadcast subscription with apps.tsdc.in (unexpected gateway response).',
+        upstreamStatus: checkRes.status
+      });
+    }
 
     if (!checkRes.ok || !payload.allowed) {
+      broadcastAccessCache.delete(cacheKey);
       // Returns 403 SUBSCRIPTION_EXPIRED, SUBSCRIPTION_SUSPENDED, or NO_ACTIVE_SUBSCRIPTION
       return res.status(403).json({
         allowed: false,
-        status: payload.status || 'inactive',
+        status: payload.status || 'denied',
         code: payload.code || 'NO_ACTIVE_SUBSCRIPTION',
-        message: payload.message || 'Your Broadcast subscription is expired, suspended, or inactive.',
-        salesEmail: 'sales@tsdc.in',
-        appsUrl: 'https://apps.tsdc.in'
+        message: payload.message || 'No active subscription found for Broadcast.',
+        salesEmail: payload.salesEmail || 'sales@tsdc.in',
+        appsUrl: payload.subscribeUrl || 'https://apps.tsdc.in'
       });
     }
+
+    broadcastAccessCache.set(cacheKey, {
+      payload,
+      expiresAt: Date.now() + 30000
+    });
 
     req.tsdcSubscription = payload;
     next();
