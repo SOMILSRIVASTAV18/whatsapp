@@ -1041,52 +1041,6 @@
       margin-top: 3px;
     }
 
-    /* AUTH OVERLAY */
-    .auth-overlay {
-      position: fixed;
-      inset: 0;
-      background: var(--slate-900);
-      z-index: 200;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      box-sizing: border-box;
-    }
-    .auth-card {
-      background: white;
-      border-radius: var(--radius-xl);
-      max-width: 420px;
-      width: 100%;
-      padding: 32px 28px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      box-sizing: border-box;
-    }
-    .auth-tabs {
-      display: flex;
-      background: var(--slate-100);
-      padding: 4px;
-      border-radius: var(--radius-md);
-      margin-bottom: 22px;
-    }
-    .auth-tab {
-      flex: 1;
-      text-align: center;
-      padding: 8px 6px;
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--slate-600);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      user-select: none;
-    }
-    .auth-tab.active {
-      background: white;
-      color: var(--slate-900);
-      box-shadow: var(--shadow-sm);
-    }
-
     /* TOAST */
     .toast-container {
       position: fixed;
@@ -1275,9 +1229,6 @@
         padding: 18px 14px;
         border-radius: var(--radius-md);
       }
-      .auth-card {
-        padding: 24px 18px;
-      }
       .toast-container {
         bottom: 70px;
         left: 10px;
@@ -1288,116 +1239,61 @@
 </head>
 <body>
 
-  <!-- TSDC SSO & AUTHENTICATION OVERLAY -->
-  <div id="authOverlay" class="auth-overlay">
-    <div class="auth-card" style="max-width: 440px;">
-      <div style="text-align: center; margin-bottom: 22px;">
-        <div class="logo-icon" style="width: 48px; height: 48px; margin: 0 auto 12px; background: linear-gradient(135deg, #008069, #00a884); box-shadow: 0 4px 14px rgba(0, 168, 132, 0.4);">
-          <!-- WhatsApp Vector Logo -->
-          <svg class="icon icon-lg icon-filled" viewBox="0 0 24 24" style="color: white; width: 26px; height: 26px;">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-        </div>
-        <h2 style="font-size: 21px; font-weight: 800; color: var(--slate-900); letter-spacing: -0.02em;">Broadcast Desk</h2>
-        <p style="font-size: 12.5px; color: var(--slate-500); margin-top: 3px;">TSDC Workspace Portal</p>
-      </div>
+  <script>
+    // Early-boot TSDC SSO check: capture callback hash or redirect directly to auth.tsdc.in
+    (function earlyTsdcSsoGuard() {
+      try {
+        localStorage.removeItem('tsdc_token');
+        localStorage.removeItem('tsdc_email');
+        localStorage.removeItem('tsdc_uid');
 
-      <!-- PRIMARY TSDC SSO ACTION BOX -->
-      <div id="tsdcSsoPrimary" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; margin-bottom: 18px;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: rgba(0, 128, 105, 0.1); border-radius: 9999px; font-size: 11px; font-weight: 700; color: var(--wa-teal); margin-bottom: 10px;">
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>TSDC Central SSO</span>
-        </div>
-        <div style="font-size: 15px; font-weight: 800; color: var(--slate-900); margin-bottom: 4px;">Single Sign-On Gateway</div>
-        <p style="font-size: 12px; color: var(--slate-600); line-height: 1.5; margin-bottom: 16px;">
-          Sign in via Google or Email on <b style="color: var(--slate-800);">auth.tsdc.in</b> to access your broadcast session.
-        </p>
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const queryParams = new URLSearchParams(window.location.search);
+        const hashToken = hashParams.get('id_token') || queryParams.get('id_token');
+        let hashEmail = hashParams.get('email') || queryParams.get('email');
+        const hashUid = hashParams.get('uid') || queryParams.get('uid');
 
-        <button type="button" class="btn btn-primary" onclick="window.redirectToSso()" style="width: 100%; padding: 12px; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 168, 132, 0.35);">
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          <span>Sign In with auth.tsdc.in</span>
-        </button>
+        if (hashToken && !hashEmail) {
+          try {
+            const parts = hashToken.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))));
+              hashEmail = payload.email || payload.user_email || '';
+            }
+          } catch (_) {}
+        }
 
-        <div id="ssoRedirectStatus" style="font-size: 11.5px; color: var(--wa-teal); margin-top: 10px; display: none; font-weight: 600;">
-          Redirecting to auth.tsdc.in…
-        </div>
-      </div>
+        if (hashToken && hashEmail) {
+          sessionStorage.setItem('tsdc_token', hashToken);
+          sessionStorage.setItem('tsdc_email', hashEmail);
+          if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          console.log('Successfully signed in via TSDC SSO as ' + hashEmail);
+        } else if (hashToken) {
+          sessionStorage.setItem('tsdc_token', hashToken);
+          if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
 
-      <!-- COLLAPSIBLE DEV / DIRECT LOGIN ACCORDION -->
-      <div style="text-align: center;">
-        <button type="button" onclick="window.toggleLocalAuthAccordion()" style="background: none; border: none; font-size: 11.5px; color: var(--slate-500); text-decoration: underline; cursor: pointer;">
-          Direct Email / Dev Mode Options
-        </button>
-      </div>
-
-      <div id="localAuthContainer" class="hidden" style="margin-top: 16px; border-top: 1px dashed var(--slate-300); padding-top: 14px;">
-        <div class="auth-tabs">
-          <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Email</div>
-          <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</div>
-          <div class="auth-tab" id="tabForgot" onclick="switchAuthTab('forgot')">Reset</div>
-        </div>
-
-        <!-- LOGIN FORM -->
-        <form id="formLogin" onsubmit="window.doLogin(event)">
-          <div class="form-group">
-            <label class="form-label">Email Address</label>
-            <input type="email" id="loginEmail" class="form-input" placeholder="you@tsdc.in" required autocomplete="email">
-          </div>
-          <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label class="form-label" style="margin-bottom:0">Password</label>
-              <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="font-size: 11px; color: var(--wa-teal); text-decoration: none; font-weight: 700;">Forgot?</a>
-            </div>
-            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
-          </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" id="btnLoginSubmit">
-            <span>Direct Sign In</span>
-          </button>
-        </form>
-
-        <!-- REGISTER FORM -->
-        <form id="formRegister" class="hidden" onsubmit="window.doRegister(event)">
-          <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input type="text" id="regName" class="form-input" placeholder="e.g. Sarah Connor" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company / Workspace (Optional)</label>
-            <input type="text" id="regCompany" class="form-input" placeholder="e.g. Growth Ventures">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email Address</label>
-            <input type="email" id="regEmail" class="form-input" placeholder="you@company.com" required autocomplete="email">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Password (Min 6 characters)</label>
-            <input type="password" id="regPassword" class="form-input" placeholder="Create secure password" minlength="6" required autocomplete="new-password">
-          </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" id="btnRegSubmit">
-            <span>Create Account</span>
-          </button>
-        </form>
-
-        <!-- FORGOT PASSWORD FORM -->
-        <form id="formForgot" class="hidden" onsubmit="window.doForgot(event)">
-          <div class="form-group">
-            <label class="form-label">Registered Email</label>
-            <input type="email" id="forgotEmail" class="form-input" placeholder="you@domain.com" required autocomplete="email">
-          </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px;" id="btnForgotSubmit">Send Reset Link</button>
-        </form>
-
-        <div style="margin-top: 14px; text-align: center;">
-          <button type="button" class="btn btn-sm" onclick="window.simulateTsdcLogin()" style="width: 100%; font-size: 11px;">
-            Simulate TSDC SSO Login (Dev Preview)
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+        const token = sessionStorage.getItem('tsdc_token');
+        const userEmail = sessionStorage.getItem('tsdc_email');
+        if (!token || !userEmail) {
+          const returnUrl = encodeURIComponent(window.location.href);
+          const targetUrl = 'https://auth.tsdc.in/?redirect_uri=' + returnUrl;
+          try {
+            if (window.top && window.top !== window.self) {
+              window.top.location.href = targetUrl;
+              return;
+            }
+          } catch (_) {}
+          window.location.href = targetUrl;
+        }
+      } catch (_) {}
+    })();
+  </script>
 
   <!-- APPLICATION SHELL -->
-  <div class="app-shell" id="appShell">
+  <div class="app-shell hidden" id="appShell">
 
     <!-- DESKTOP SIDEBAR -->
     <aside class="sidebar">
@@ -1817,7 +1713,7 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--slate-100);">
                   <span style="color: var(--slate-500);">Storage & Persistence</span>
-                  <b style="color: var(--wa-teal);">Firebase Firestore</b>
+                  <b id="diagStorageMode" style="color: var(--wa-teal);">Workspace Storage</b>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--slate-100);">
                   <span style="color: var(--slate-500);">Last Sync</span>
@@ -1827,7 +1723,7 @@
 
               <div style="margin-top: 22px; background: #e7f7ef; border: 1px solid #a7f3d0; padding: 12px; border-radius: var(--radius-md); font-size: 11.5px; color: #006853; display: flex; gap: 8px; align-items: flex-start;">
                 <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: var(--wa-teal); margin-top: 1px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span><b>Firebase Security Rules Active:</b> Access to your contacts, campaigns, and delivery reports is strictly restricted to your authenticated user account.</span>
+                <span id="diagSecurityBannerText"><b>Workspace Isolation Active:</b> Contacts, audience lists, and delivery reports are scoped strictly to your authenticated TSDC Broadcast account.</span>
               </div>
             </div>
           </div>
@@ -2068,7 +1964,7 @@
                 <h2 class="card-title" style="margin-bottom: 10px;">Active Session</h2>
                 <div style="background: var(--slate-50); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); font-size: 12px;">
                   <div style="color: var(--slate-500); margin-bottom: 2px;">Authentication:</div>
-                  <div class="mono" style="word-break: break-all; color: var(--slate-800);">Firebase Authentication (Secure Token)</div>
+                  <div id="profileAuthMethodText" class="mono" style="word-break: break-all; color: var(--slate-800);">TSDC Central SSO (auth.tsdc.in)</div>
                 </div>
                 <div style="margin-top: 14px;">
                   <button class="btn btn-danger" style="width: 100%;" onclick="window.doLogout()">
@@ -2086,7 +1982,7 @@
   </div>
 
   <!-- FIXED MOBILE BOTTOM NAVIGATION BAR -->
-  <nav class="mobile-bar" id="mobileNavBar">
+  <nav class="mobile-bar hidden" id="mobileNavBar">
     <button class="mobile-nav-btn active" id="mob-composer" onclick="switchTab('composer')">
       <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       <span>Composer</span>
@@ -2310,11 +2206,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
     import {
       getAuth,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
       sendPasswordResetEmail,
       signOut,
-      onAuthStateChanged,
       updateProfile,
       signInWithCustomToken
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
@@ -2380,14 +2273,19 @@
       try {
         if (window.top && window.top !== window.self) {
           window.top.location.href = targetUrl;
-        } else {
-          window.location.href = targetUrl;
+          return;
         }
-      } catch (_) {
-        window.location.href = targetUrl;
-      }
+      } catch (_) {}
+      window.location.href = targetUrl;
     };
     window.redirectToTsdcSso = window.redirectToSso;
+
+    window.showAuthorizedAppShell = function() {
+      const shell = document.getElementById('appShell');
+      const mobBar = document.getElementById('mobileNavBar');
+      if (shell) shell.classList.remove('hidden');
+      if (mobBar) mobBar.classList.remove('hidden');
+    };
 
     window.verifyBroadcastSubscription = async function(token, userEmail) {
       if (!token || !userEmail) return false;
@@ -2402,10 +2300,7 @@
         localStorage.removeItem('tsdc_token');
         localStorage.removeItem('tsdc_email');
         localStorage.removeItem('tsdc_uid');
-        if (!isInsideIframe) {
-          const returnUrl = encodeURIComponent(window.location.href);
-          window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
-        }
+        window.redirectToSso();
         return false;
       }
 
@@ -2504,23 +2399,23 @@
       const token = sessionStorage.getItem('tsdc_token');
       const userEmail = sessionStorage.getItem('tsdc_email');
 
-      // 2. Redirect unauthenticated visitors to auth.tsdc.in
+      // 2. Direct redirect for unauthenticated visitors to auth.tsdc.in
       if (!token || !userEmail) {
-        if (!isInsideIframe) {
-          const returnUrl = encodeURIComponent(window.location.href);
-          window.location.href = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
-        }
+        window.redirectToSso();
         return false;
       }
 
       // 3. Verify active subscription for "WhatsApp Broadcast" on every visit
       try {
-        return await window.verifyBroadcastSubscription(token, userEmail);
+        const ok = await window.verifyBroadcastSubscription(token, userEmail);
+        if (ok) window.showAuthorizedAppShell();
+        return ok;
       } catch (err) {
         if (err && String(err.message || '').startsWith('Access denied')) {
           throw err;
         }
         console.warn('[TSDC Subscription Check] Gateway verification error:', err.message || err);
+        window.showAuthorizedAppShell();
         return true;
       }
     })();
@@ -2567,41 +2462,15 @@
       return headers;
     };
 
-    window.simulateTsdcLogin = function() {
-      const mockEmail = 'dev@tsdc.in';
-      const mockUid = 'tsdc_dev_user_01';
-      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-      const payload = btoa(JSON.stringify({
-        sub: mockUid,
-        user_id: mockUid,
-        email: mockEmail,
-        name: "TSDC Developer",
-        iss: "https://auth.tsdc.in",
-        exp: Math.floor(Date.now() / 1000) + 86400
-      }));
-      const mockToken = `${header}.${payload}.simulated_signature`;
-
-      sessionStorage.setItem('tsdc_token', mockToken);
-      sessionStorage.setItem('tsdc_email', mockEmail);
-      sessionStorage.setItem('tsdc_uid', mockUid);
-
-      window.showToast(`Signed in with simulated TSDC SSO (${mockEmail})`);
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    };
-
-    window.toggleLocalAuthAccordion = function() {
-      const container = document.getElementById('localAuthContainer');
-      if (container) container.classList.toggle('hidden');
-    };
-
     // Application state
     let auth = null;
     let db = null;
     let currentUser = null;
     let contactsList = [];
     let userLists = []; // [{ id, ownerId, name, color, description, createdAt }]
+    let campaignsList = [];
+    let workspaceProfile = { name: '', company: '' };
+    let activeStorageMode = 'workspace'; // 'firestore' | 'workspace'
     let activeContactListFilter = 'all'; // 'all' or listId
     let composerTargetListId = 'all';
     let selectedContactIds = new Set();
@@ -2863,125 +2732,303 @@
       return EMBEDDED_FIREBASE_CONFIG;
     }
 
-    // Initialize Firebase SDK
+    const OperationType = {
+      CREATE: 'create',
+      UPDATE: 'update',
+      DELETE: 'delete',
+      LIST: 'list',
+      GET: 'get',
+      WRITE: 'write'
+    };
+
+    function handleFirestoreError(error, operationType, path) {
+      const errInfo = {
+        error: error instanceof Error ? error.message : String(error),
+        authInfo: {
+          userId: auth && auth.currentUser ? auth.currentUser.uid : null,
+          email: auth && auth.currentUser ? auth.currentUser.email : null,
+          emailVerified: auth && auth.currentUser ? auth.currentUser.emailVerified : false
+        },
+        operationType,
+        path
+      };
+      console.error('Firestore Error:', JSON.stringify(errInfo));
+    }
+
+    function isValidFirestoreId(id) {
+      return typeof id === 'string' && id.length > 0 && id.length <= 128 && /^[a-zA-Z0-9_-]+$/.test(id);
+    }
+
+    function getFirestoreUid() {
+      return auth && auth.currentUser ? auth.currentUser.uid : null;
+    }
+
+    function canUseFirestore(uid) {
+      const fbUid = getFirestoreUid();
+      return Boolean(db && fbUid && (!uid || fbUid === uid) && isValidFirestoreId(fbUid));
+    }
+
+    function getWorkspaceOwnerId() {
+      const fbUid = getFirestoreUid();
+      if (activeStorageMode === 'firestore' && fbUid) return fbUid;
+      if (currentUser && currentUser.uid) return currentUser.uid;
+      return 'tsdc_workspace';
+    }
+
+    function getWorkspaceStorageKey() {
+      const identity = (currentUser && (currentUser.email || currentUser.uid)) || sessionStorage.getItem('tsdc_email') || 'default';
+      return 'tsdc_ws_v1_' + String(identity).trim().toLowerCase();
+    }
+
+    function readLocalWorkspace() {
+      try {
+        const raw = localStorage.getItem(getWorkspaceStorageKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function writeLocalWorkspace(state) {
+      try {
+        localStorage.setItem(getWorkspaceStorageKey(), JSON.stringify(state));
+      } catch (_) {}
+    }
+
+    function updateStorageModeUI(mode) {
+      const storageEl = document.getElementById('diagStorageMode');
+      const bannerEl = document.getElementById('diagSecurityBannerText');
+      const authTextEl = document.getElementById('profileAuthMethodText');
+      if (mode === 'firestore') {
+        if (storageEl) storageEl.textContent = 'Firebase Firestore';
+        if (bannerEl) bannerEl.innerHTML = '<b>Firebase Security Rules Active:</b> Access to your contacts, campaigns, and delivery reports is strictly restricted to your authenticated user account.';
+        if (authTextEl) authTextEl.textContent = 'Firebase Authentication (Secure Token)';
+      } else {
+        const backendLabel = window.isBackendConnected ? 'TSDC Workspace (Backend + Local)' : 'TSDC Workspace (Browser Storage)';
+        if (storageEl) storageEl.textContent = backendLabel;
+        if (bannerEl) bannerEl.innerHTML = '<b>TSDC SSO Isolation Active:</b> Your contacts, lists, and reports are scoped privately to your TSDC session.';
+        if (authTextEl) authTextEl.textContent = currentUser && currentUser.isTsdc ? 'TSDC Central SSO (auth.tsdc.in)' : 'TSDC Workspace Session';
+      }
+    }
+
+    function renderAllWorkspaceViews() {
+      renderListPills();
+      populateListDropdowns();
+      renderContactsTable();
+      renderReportsTable();
+      updateMetrics();
+      updatePreview();
+    }
+
+    async function persistWorkspaceState() {
+      const snapshot = {
+        profile: workspaceProfile,
+        lists: userLists,
+        contacts: contactsList,
+        campaigns: campaignsList,
+        reports: reportsList,
+        updatedAt: new Date().toISOString()
+      };
+      writeLocalWorkspace(snapshot);
+
+      const shouldSyncServer = !window.isStaticHost() || Boolean(window.getBackendUrl());
+      if (!shouldSyncServer || !currentUser || window.__tsdcAccessBlocked) return;
+
+      try {
+        const authHeaders = await window.getAuthHeaders({ 'Content-Type': 'application/json' });
+        const res = await fetch(window.getApiUrl('/api/workspace'), {
+          method: 'PUT',
+          headers: authHeaders,
+          body: JSON.stringify(snapshot)
+        });
+        if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}));
+          if (window.isSubscriptionDenial(res.status, errData)) {
+            await window.handleBackendSubscriptionDenial(errData);
+          }
+        }
+      } catch (_) {}
+    }
+
+    async function startWorkspaceMode() {
+      stopFirestoreListeners();
+      activeStorageMode = 'workspace';
+      updateStorageModeUI('workspace');
+
+      const local = readLocalWorkspace();
+      if (local) {
+        workspaceProfile = local.profile || workspaceProfile;
+        userLists = Array.isArray(local.lists) ? local.lists : [];
+        contactsList = Array.isArray(local.contacts) ? local.contacts : [];
+        campaignsList = Array.isArray(local.campaigns) ? local.campaigns : [];
+        reportsList = Array.isArray(local.reports) ? local.reports : [];
+        if (selectedContactIds.size === 0 && contactsList.length > 0) {
+          contactsList.forEach(c => selectedContactIds.add(c.id));
+        }
+        renderAllWorkspaceViews();
+      } else {
+        userLists = [];
+        contactsList = [];
+        campaignsList = [];
+        reportsList = [];
+        renderAllWorkspaceViews();
+      }
+
+      const shouldFetchServer = !window.isStaticHost() || Boolean(window.getBackendUrl());
+      if (shouldFetchServer && currentUser && !window.__tsdcAccessBlocked) {
+        try {
+          const authHeaders = await window.getAuthHeaders();
+          const res = await fetch(window.getApiUrl('/api/workspace'), { headers: authHeaders });
+          if (res.ok) {
+            const serverData = await res.json();
+            const serverCount = (serverData.lists?.length || 0) + (serverData.contacts?.length || 0) + (serverData.reports?.length || 0);
+            const localCount = (local?.lists?.length || 0) + (local?.contacts?.length || 0) + (local?.reports?.length || 0);
+            const serverNewer = serverData.updatedAt && (!local?.updatedAt || new Date(serverData.updatedAt) > new Date(local.updatedAt));
+
+            if (serverCount > 0 && (localCount === 0 || serverNewer)) {
+              workspaceProfile = serverData.profile || workspaceProfile;
+              userLists = Array.isArray(serverData.lists) ? serverData.lists : [];
+              contactsList = Array.isArray(serverData.contacts) ? serverData.contacts : [];
+              campaignsList = Array.isArray(serverData.campaigns) ? serverData.campaigns : [];
+              reportsList = Array.isArray(serverData.reports) ? serverData.reports : [];
+              selectedContactIds.clear();
+              contactsList.forEach(c => selectedContactIds.add(c.id));
+              writeLocalWorkspace({
+                profile: workspaceProfile,
+                lists: userLists,
+                contacts: contactsList,
+                campaigns: campaignsList,
+                reports: reportsList,
+                updatedAt: serverData.updatedAt || new Date().toISOString()
+              });
+              renderAllWorkspaceViews();
+            } else if (localCount > 0 && serverCount === 0) {
+              await persistWorkspaceState();
+            }
+            window.isBackendConnected = true;
+            updateStorageModeUI('workspace');
+          }
+        } catch (_) {}
+      }
+
+      if (currentUser) {
+        await loadUserProfile(currentUser);
+      }
+    }
+
+    function stopFirestoreListeners() {
+      if (unsubscribeContacts) { unsubscribeContacts(); unsubscribeContacts = null; }
+      if (unsubscribeReports) { unsubscribeReports(); unsubscribeReports = null; }
+      if (unsubscribeLists) { unsubscribeLists(); unsubscribeLists = null; }
+    }
+
+    async function attemptFirebaseCustomTokenBridge(tsdcUser) {
+      if (!auth || !tsdcUser) return false;
+      if (auth.currentUser && (!auth.currentUser.email || !tsdcUser.email || auth.currentUser.email.toLowerCase() === tsdcUser.email.toLowerCase())) {
+        return true;
+      }
+      const canTryBackend = !window.isStaticHost() || Boolean(window.getBackendUrl());
+      if (!canTryBackend) return false;
+      try {
+        const authHeaders = await window.getAuthHeaders({ 'Content-Type': 'application/json' });
+        const res = await fetch(window.getApiUrl('/api/auth/firebase-token'), {
+          method: 'POST',
+          headers: authHeaders
+        });
+        if (!res.ok) return false;
+        const data = await res.json().catch(() => null);
+        if (data && data.ok && data.customToken) {
+          await signInWithCustomToken(auth, data.customToken);
+          return Boolean(auth.currentUser);
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    // Initialize Firebase SDK & Workspace Auth
     async function initFirebase() {
       try {
         try {
           const allowed = await window.protectBroadcastPromise;
-          if (window.__tsdcAccessBlocked) return;
-          if (!allowed && !isInsideIframe) return;
+          if (window.__tsdcAccessBlocked || !allowed) return;
         } catch (guardErr) {
           console.error(guardErr.message);
           return;
         }
+
+        const tsdcUser = window.getTsdcUser();
+        if (!tsdcUser) {
+          window.redirectToSso();
+          return;
+        }
+
+        window.showAuthorizedAppShell();
 
         const config = await resolveFirebaseConfig();
         const app = initializeApp(config);
         auth = getAuth(app);
         db = config.firestoreDatabaseId ? getFirestore(app, config.firestoreDatabaseId) : getFirestore(app);
 
-        try {
-          await getDocFromServer(doc(db, 'test', 'connection'));
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('the client is offline')) {
-            console.warn("Please check your Firebase configuration / network.");
-          }
+        currentUser = tsdcUser;
+        const hasFirebaseSession = await attemptFirebaseCustomTokenBridge(tsdcUser);
+        if (hasFirebaseSession && auth.currentUser) {
+          currentUser = auth.currentUser;
+          activeStorageMode = 'firestore';
+          updateStorageModeUI('firestore');
+          await loadUserProfile(auth.currentUser);
+          setupFirestoreListeners(auth.currentUser.uid);
+        } else {
+          await startWorkspaceMode();
         }
-
-        // 1. Check if user is authenticated via TSDC SSO session
-        const tsdcUser = window.getTsdcUser();
-        if (tsdcUser) {
-          currentUser = tsdcUser;
-          document.getElementById('authOverlay').classList.add('hidden');
-          try {
-            const token = await currentUser.getIdToken();
-            await signInWithCustomToken(auth, token);
-          } catch (_) {}
-          await loadUserProfile(currentUser);
-          setupFirestoreListeners(currentUser.uid);
-          window.fetchStatus();
-          return;
-        }
-
-        // 2. Redirect unauthenticated users to auth.tsdc.in
-        if (!isInsideIframe) {
-          console.log("Unauthenticated on portal - redirecting to auth.tsdc.in");
-          window.redirectToSso();
-          return;
-        }
-
-        onAuthStateChanged(auth, async user => {
-          if (user) {
-            try {
-              const fbToken = await user.getIdToken();
-              if (user.email) {
-                sessionStorage.setItem('tsdc_token', fbToken);
-                sessionStorage.setItem('tsdc_email', user.email);
-                sessionStorage.setItem('tsdc_uid', user.uid);
-                await window.verifyBroadcastSubscription(fbToken, user.email).catch(err => {
-                  if (err && String(err.message || '').startsWith('Access denied')) throw err;
-                });
-              }
-            } catch (guardErr) {
-              if (guardErr && String(guardErr.message || '').startsWith('Access denied')) return;
-            }
-
-            currentUser = user;
-            document.getElementById('authOverlay').classList.add('hidden');
-            await loadUserProfile(user);
-            setupFirestoreListeners(user.uid);
-            window.fetchStatus();
-          } else {
-            const currentTsdc = window.getTsdcUser();
-            if (currentTsdc) {
-              currentUser = currentTsdc;
-              document.getElementById('authOverlay').classList.add('hidden');
-              await loadUserProfile(currentTsdc);
-              setupFirestoreListeners(currentTsdc.uid);
-              window.fetchStatus();
-              return;
-            }
-
-            currentUser = null;
-            if (unsubscribeContacts) unsubscribeContacts();
-            if (unsubscribeReports) unsubscribeReports();
-            if (unsubscribeLists) unsubscribeLists();
-            document.getElementById('authOverlay').classList.remove('hidden');
-
-            if (!isInsideIframe) {
-              window.redirectToSso();
-            }
-          }
-        });
+        window.fetchStatus();
       } catch (err) {
-        console.error('Firebase initialization error:', err);
-        window.showToast('Firebase connection failed: ' + err.message, true);
+        console.error('Initialization error:', err);
+        if (window.getTsdcUser()) {
+          window.showAuthorizedAppShell();
+          currentUser = window.getTsdcUser();
+          await startWorkspaceMode();
+          window.fetchStatus();
+        } else {
+          window.redirectToSso();
+        }
       }
     }
 
-    // Load & Save User Profile in Firestore
+    // Load & Save User Profile
     async function loadUserProfile(user) {
       try {
-        let name = user.displayName || (user.email ? user.email.split('@')[0] : 'TSDC User');
-        let company = '';
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          const snap = await getDoc(userRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.name) name = data.name;
-            if (data.company) company = data.company;
-          } else {
-            await setDoc(userRef, {
-              id: user.uid,
-              name,
-              email: user.email,
-              company: '',
-              createdAt: new Date().toISOString()
-            }).catch(() => {});
+        let name = workspaceProfile.name || user.displayName || (user.email ? user.email.split('@')[0] : 'TSDC User');
+        let company = workspaceProfile.company || '';
+
+        if (canUseFirestore(user.uid)) {
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+              const data = snap.data();
+              if (data.name) name = data.name;
+              if (data.company) company = data.company;
+            } else {
+              await setDoc(userRef, {
+                id: user.uid,
+                name,
+                email: user.email || '',
+                company: '',
+                createdAt: new Date().toISOString()
+              }).catch(() => {});
+            }
+          } catch (e) {
+            handleFirestoreError(e, OperationType.GET, `users/${user.uid}`);
           }
-        } catch (e) {
-          console.warn('Firestore user profile notice:', e.message);
+        } else {
+          const local = readLocalWorkspace();
+          if (local && local.profile) {
+            if (local.profile.name) name = local.profile.name;
+            if (local.profile.company !== undefined) company = local.profile.company;
+          }
+          workspaceProfile = { name, company };
         }
 
         const sideNameEl = document.getElementById('sideUserName');
@@ -2991,8 +3038,8 @@
           sideNameEl.title = name;
         }
         if (sideEmailEl) {
-          sideEmailEl.textContent = user.email;
-          sideEmailEl.title = user.email;
+          sideEmailEl.textContent = user.email || '';
+          sideEmailEl.title = user.email || '';
         }
         const sideAvatarEl = document.getElementById('sideAvatar');
         if (sideAvatarEl) sideAvatarEl.textContent = (name || 'US').slice(0, 2).toUpperCase();
@@ -3008,10 +3055,10 @@
         const pUid = document.getElementById('profileUid');
         const pBadge = document.getElementById('profileEmailBadge');
         if (pName) pName.value = name;
-        if (pEmail) pEmail.value = user.email;
+        if (pEmail) pEmail.value = user.email || '';
         if (pComp) pComp.value = company;
-        if (pUid) pUid.value = user.uid;
-        if (pBadge) pBadge.textContent = user.email;
+        if (pUid) pUid.value = user.uid || '';
+        if (pBadge) pBadge.textContent = user.email || 'your email';
       } catch (e) {
         console.error('Error loading profile:', e);
       }
@@ -3023,80 +3070,26 @@
       const name = document.getElementById('profileName').value.trim();
       const company = document.getElementById('profileCompany').value.trim();
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid), { name, company });
-        await updateProfile(currentUser, { displayName: name });
+        if (canUseFirestore(currentUser.uid)) {
+          await setDoc(doc(db, 'users', currentUser.uid), {
+            id: currentUser.uid,
+            name,
+            email: currentUser.email || '',
+            company,
+            createdAt: new Date().toISOString()
+          }, { merge: true });
+          if (auth.currentUser) {
+            await updateProfile(auth.currentUser, { displayName: name });
+          }
+        } else {
+          workspaceProfile = { name, company };
+          currentUser.displayName = name;
+          await persistWorkspaceState();
+        }
         await loadUserProfile(currentUser);
         window.showToast('Profile updated successfully.');
       } catch (err) {
         window.showToast(err.message, true);
-      }
-    };
-
-    // Firebase Auth Actions
-    window.doLogin = async function(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      const btn = document.getElementById('btnLoginSubmit');
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        window.showToast('Signed in successfully.');
-      } catch (err) {
-        window.showToast(err.message, true);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<span>Sign In</span><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-      }
-    };
-
-    window.doRegister = async function(e) {
-      e.preventDefault();
-      const name = document.getElementById('regName').value.trim();
-      const company = document.getElementById('regCompany').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const btn = document.getElementById('btnRegSubmit');
-      btn.disabled = true;
-      btn.textContent = 'Creating account…';
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(cred.user, { displayName: name });
-        await setDoc(doc(db, 'users', cred.user.uid), {
-          id: cred.user.uid,
-          name,
-          email,
-          company,
-          createdAt: new Date().toISOString()
-        });
-        window.showToast('Account created successfully!');
-      } catch (err) {
-        window.showToast(err.message, true);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<span>Create Account</span><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-      }
-    };
-
-    window.doForgot = async function(e) {
-      e.preventDefault();
-      const email = document.getElementById('forgotEmail').value.trim();
-      const btn = document.getElementById('btnForgotSubmit');
-      btn.disabled = true;
-      btn.textContent = 'Sending email…';
-
-      try {
-        await sendPasswordResetEmail(auth, email);
-        window.showToast(`Password reset link sent to ${email}. Check your inbox!`);
-        switchAuthTab('login');
-      } catch (err) {
-        window.showToast(err.message, true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Send Reset Link';
       }
     };
 
@@ -3122,25 +3115,23 @@
           try { await signOut(auth); } catch (_) {}
         }
         currentUser = null;
-        if (unsubscribeContacts) unsubscribeContacts();
-        if (unsubscribeReports) unsubscribeReports();
-        if (unsubscribeLists) unsubscribeLists();
-        window.showToast('Signed out of desk.');
-        document.getElementById('authOverlay').classList.remove('hidden');
-
-        // Redirect to SSO gateway when running outside iframe
-        if (!isInsideIframe || window.isTsdcDomain()) {
-          setTimeout(() => {
-            window.redirectToSso();
-          }, 600);
-        }
+        stopFirestoreListeners();
+        window.showToast('Signed out of desk. Redirecting…');
+        window.redirectToSso();
       } catch (err) {
         window.showToast(err.message, true);
       }
     };
 
-    // Setup Realtime Firestore Listeners
+    // Setup Realtime Firestore Listeners (only when authenticated with Firebase Auth)
     function setupFirestoreListeners(uid) {
+      if (!canUseFirestore(uid)) {
+        return startWorkspaceMode();
+      }
+      stopFirestoreListeners();
+      activeStorageMode = 'firestore';
+      updateStorageModeUI('firestore');
+
       const listsCol = collection(db, 'users', uid, 'lists');
       unsubscribeLists = onSnapshot(listsCol, snap => {
         userLists = [];
@@ -3151,7 +3142,11 @@
         renderContactsTable();
         updatePreview();
       }, err => {
-        console.error('Lists snapshot error:', err);
+        if (err && err.code === 'permission-denied') {
+          startWorkspaceMode();
+          return;
+        }
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/lists`);
       });
 
       const contactsCol = collection(db, 'users', uid, 'contacts');
@@ -3167,7 +3162,11 @@
         updateMetrics();
         updatePreview();
       }, err => {
-        console.error('Contacts snapshot error:', err);
+        if (err && err.code === 'permission-denied') {
+          startWorkspaceMode();
+          return;
+        }
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/contacts`);
       });
 
       const reportsCol = collection(db, 'users', uid, 'reports');
@@ -3178,7 +3177,11 @@
         renderReportsTable();
         updateMetrics();
       }, err => {
-        console.error('Reports snapshot error:', err);
+        if (err && err.code === 'permission-denied') {
+          startWorkspaceMode();
+          return;
+        }
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/reports`);
       });
     }
 
@@ -3349,15 +3352,22 @@
       if (!name) return window.showToast('Please enter a list name.', true);
 
       const id = `l_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const listObj = {
+        id,
+        ownerId: getWorkspaceOwnerId(),
+        name,
+        color,
+        description,
+        createdAt: new Date().toISOString()
+      };
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'lists', id), {
-          id,
-          ownerId: currentUser.uid,
-          name,
-          color,
-          description,
-          createdAt: new Date().toISOString()
-        });
+        if (canUseFirestore(getFirestoreUid())) {
+          await setDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), listObj);
+        } else {
+          userLists.push(listObj);
+          userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          await persistWorkspaceState();
+        }
         window.closeCreateListModal();
         window.showToast(`List "${name}" created.`);
         window.filterByList(id);
@@ -3391,11 +3401,24 @@
       if (!id || !name) return;
 
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'lists', id), {
-          name,
-          color,
-          description
-        });
+        if (canUseFirestore(getFirestoreUid())) {
+          await updateDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), {
+            ownerId: getFirestoreUid(),
+            name,
+            color,
+            description
+          });
+        } else {
+          const target = userLists.find(l => l.id === id);
+          if (target) {
+            target.name = name;
+            target.color = color;
+            target.description = description;
+          }
+          userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
+        }
         window.closeEditListModal();
         window.showToast(`List "${name}" updated.`);
       } catch (err) {
@@ -3411,17 +3434,29 @@
 
       try {
         const listId = list.id;
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'lists', listId));
-        for (const c of contactsList) {
-          if (Array.isArray(c.listIds) && c.listIds.includes(listId)) {
-            const updated = c.listIds.filter(id => id !== listId);
-            await updateDoc(doc(db, 'users', currentUser.uid, 'contacts', c.id), { listIds: updated }).catch(() => {});
+        if (canUseFirestore(getFirestoreUid())) {
+          const fbUid = getFirestoreUid();
+          await deleteDoc(doc(db, 'users', fbUid, 'lists', listId));
+          for (const c of contactsList) {
+            if (Array.isArray(c.listIds) && c.listIds.includes(listId)) {
+              const updated = c.listIds.filter(id => id !== listId);
+              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: updated }).catch(() => {});
+            }
           }
+        } else {
+          userLists = userLists.filter(l => l.id !== listId);
+          contactsList.forEach(c => {
+            if (Array.isArray(c.listIds)) {
+              c.listIds = c.listIds.filter(id => id !== listId);
+            }
+          });
+          await persistWorkspaceState();
         }
         activeContactListFilter = 'all';
         if (composerTargetListId === listId) {
           window.handleComposerTargetListChange('all');
         }
+        renderAllWorkspaceViews();
         window.showToast(`List "${list.name}" deleted.`);
       } catch (err) {
         window.showToast(err.message, true);
@@ -3437,6 +3472,9 @@
       }
 
       const selected = contactsList.filter(c => selectedContactIds.has(c.id));
+      const useFs = canUseFirestore(getFirestoreUid());
+      const fbUid = getFirestoreUid();
+
       if (listId === '__remove_current__') {
         if (activeContactListFilter === 'all') {
           document.getElementById('bulkAssignListSelect').value = '';
@@ -3446,7 +3484,14 @@
         for (const c of selected) {
           const current = Array.isArray(c.listIds) ? c.listIds : [];
           const updated = current.filter(id => id !== listToRemove);
-          await updateDoc(doc(db, 'users', currentUser.uid, 'contacts', c.id), { listIds: updated });
+          c.listIds = updated;
+          if (useFs) {
+            await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: updated });
+          }
+        }
+        if (!useFs) {
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
         window.showToast(`Removed ${selected.length} contact(s) from list.`);
       } else {
@@ -3455,8 +3500,15 @@
           const current = Array.isArray(c.listIds) ? [...c.listIds] : [];
           if (!current.includes(listId)) {
             current.push(listId);
-            await updateDoc(doc(db, 'users', currentUser.uid, 'contacts', c.id), { listIds: current });
+            c.listIds = current;
+            if (useFs) {
+              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: current });
+            }
           }
+        }
+        if (!useFs) {
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
         window.showToast(`Added ${selected.length} contact(s) to "${targetList?.name || 'List'}".`);
       }
@@ -3505,9 +3557,18 @@
       const checkedListIds = Array.from(chks).filter(c => c.checked).map(c => c.value);
 
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'contacts', contactId), {
-          listIds: checkedListIds
-        });
+        if (canUseFirestore(getFirestoreUid())) {
+          const fbUid = getFirestoreUid();
+          await updateDoc(doc(db, 'users', fbUid, 'contacts', contactId), {
+            ownerId: fbUid,
+            listIds: checkedListIds
+          });
+        } else {
+          const target = contactsList.find(c => c.id === contactId);
+          if (target) target.listIds = checkedListIds;
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
+        }
         window.closeContactListsModal();
         window.showToast('Contact lists updated.');
       } catch (err) {
@@ -3655,7 +3716,14 @@
     window.deleteSingleContact = async function(id) {
       if (!currentUser) return;
       try {
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'contacts', id));
+        if (canUseFirestore(getFirestoreUid())) {
+          await deleteDoc(doc(db, 'users', getFirestoreUid(), 'contacts', id));
+        } else {
+          contactsList = contactsList.filter(c => c.id !== id);
+          selectedContactIds.delete(id);
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
+        }
         selectedContactIds.delete(id);
         window.showToast('Contact deleted.');
       } catch (err) {
@@ -3666,10 +3734,19 @@
     window.deleteSelectedContacts = async function() {
       if (!currentUser || selectedContactIds.size === 0) return window.showToast('No contacts selected.', true);
       const toDelete = Array.from(selectedContactIds);
+      const deleteSet = new Set(toDelete);
       try {
-        for (const id of toDelete) {
-          await deleteDoc(doc(db, 'users', currentUser.uid, 'contacts', id));
-          selectedContactIds.delete(id);
+        if (canUseFirestore(getFirestoreUid())) {
+          const fbUid = getFirestoreUid();
+          for (const id of toDelete) {
+            await deleteDoc(doc(db, 'users', fbUid, 'contacts', id));
+            selectedContactIds.delete(id);
+          }
+        } else {
+          contactsList = contactsList.filter(c => !deleteSet.has(c.id));
+          toDelete.forEach(id => selectedContactIds.delete(id));
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
         window.showToast(`Deleted ${toDelete.length} contacts.`);
       } catch (err) {
@@ -3700,7 +3777,7 @@
 
       const contactObj = {
         id,
-        ownerId: currentUser.uid,
+        ownerId: getWorkspaceOwnerId(),
         name,
         phone,
         optedIn,
@@ -3709,7 +3786,14 @@
       };
 
       try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'contacts', id), contactObj);
+        if (canUseFirestore(getFirestoreUid())) {
+          await setDoc(doc(db, 'users', getFirestoreUid(), 'contacts', id), contactObj);
+        } else {
+          contactsList.push(contactObj);
+          selectedContactIds.add(id);
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
+        }
         selectedContactIds.add(id);
         closeAddContactModal();
         window.showToast(`Contact ${name} saved.`);
@@ -3730,27 +3814,29 @@
         let contacts = [];
         let count = 0;
 
-        // Try backend parser first
-        try {
-          const authHeaders = await window.getAuthHeaders();
-          const res = await fetch(window.getApiUrl('/api/contacts/parse-csv'), {
-            method: 'POST',
-            headers: authHeaders,
-            body: formData
-          });
-          if (res.status === 403) {
-            const errData = await res.json().catch(() => ({}));
-            if (window.isSubscriptionDenial(res.status, errData)) {
-              const blocked = await window.handleBackendSubscriptionDenial(errData);
-              if (blocked) return;
+        // Try backend parser first when backend is expected
+        if (!window.isStaticHost() || Boolean(window.getBackendUrl())) {
+          try {
+            const authHeaders = await window.getAuthHeaders();
+            const res = await fetch(window.getApiUrl('/api/contacts/parse-csv'), {
+              method: 'POST',
+              headers: authHeaders,
+              body: formData
+            });
+            if (res.status === 403) {
+              const errData = await res.json().catch(() => ({}));
+              if (window.isSubscriptionDenial(res.status, errData)) {
+                const blocked = await window.handleBackendSubscriptionDenial(errData);
+                if (blocked) return;
+              }
             }
-          }
-          if (res.ok) {
-            const data = await res.json();
-            contacts = data.contacts || [];
-            count = data.count || contacts.length;
-          }
-        } catch (_) {}
+            if (res.ok) {
+              const data = await res.json();
+              contacts = data.contacts || [];
+              count = data.count || contacts.length;
+            }
+          } catch (_) {}
+        }
 
         // Fallback: parse client-side directly if backend is offline or static host
         if (!contacts.length) {
@@ -3790,7 +3876,7 @@
                 seen.add(phone);
                 contacts.push({
                   id: `c_${Date.now()}_${i}_${phone}`,
-                  ownerId: currentUser.uid,
+                  ownerId: getWorkspaceOwnerId(),
                   name: String(name || 'Contact').slice(0, 150).trim(),
                   phone,
                   optedIn,
@@ -3805,20 +3891,42 @@
         if (!contacts.length) throw new Error('Could not parse any valid contacts with phone numbers from this CSV.');
 
         window.showToast(`Importing ${count} contacts…`);
+        const useFs = canUseFirestore(getFirestoreUid());
+        const fbUid = getFirestoreUid();
+        const ownerId = getWorkspaceOwnerId();
+
         for (const c of contacts) {
+          c.ownerId = ownerId;
           if (activeContactListFilter !== 'all') {
             c.listIds = [activeContactListFilter];
           } else {
             c.listIds = c.listIds || [];
           }
-          await setDoc(doc(db, 'users', currentUser.uid, 'contacts', c.id), c);
+          if (useFs) {
+            await setDoc(doc(db, 'users', fbUid, 'contacts', c.id), c);
+          } else {
+            const existingIdx = contactsList.findIndex(x => x.phone === c.phone);
+            if (existingIdx !== -1) {
+              contactsList[existingIdx] = { ...contactsList[existingIdx], ...c, id: contactsList[existingIdx].id };
+              selectedContactIds.add(contactsList[existingIdx].id);
+            } else {
+              contactsList.push(c);
+              selectedContactIds.add(c.id);
+            }
+          }
           selectedContactIds.add(c.id);
+        }
+
+        if (!useFs) {
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
         window.showToast(`Imported ${count} contacts successfully!`);
       } catch (err) {
         window.showToast(err.message, true);
+      } finally {
+        e.target.value = '';
       }
-      e.target.value = '';
     };
 
     // MEDIA ATTACHMENTS & CLIPBOARD PASTE
@@ -4143,10 +4251,11 @@
           throw new Error(data.error || data.message || `Server returned error (${res.status})`);
         }
 
-        const campRef = doc(collection(db, 'users', currentUser.uid, 'campaigns'));
-        await setDoc(campRef, {
-          id: campRef.id,
-          ownerId: currentUser.uid,
+        const ownerId = getWorkspaceOwnerId();
+        const campId = `camp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const campObj = {
+          id: campId,
+          ownerId,
           title: pendingBatch.campaignName,
           targetListName: pendingBatch.targetListName,
           targetListId: pendingBatch.targetListId,
@@ -4156,20 +4265,44 @@
           mediaMime: pendingBatch.media?.mimetype || '',
           recipientCount: pendingBatch.contacts.length,
           createdAt: new Date().toISOString()
-        });
+        };
 
-        for (const c of pendingBatch.contacts) {
-          const reportRef = doc(collection(db, 'users', currentUser.uid, 'reports'));
-          await setDoc(reportRef, {
-            id: reportRef.id,
-            ownerId: currentUser.uid,
-            name: c.name,
-            phone: c.phone,
-            status: 'Submitted',
-            detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
-            hasMedia: Boolean(pendingBatch.media),
-            at: new Date().toISOString()
-          });
+        const useFs = canUseFirestore(getFirestoreUid());
+        const fbUid = getFirestoreUid();
+
+        if (useFs) {
+          const campRef = doc(collection(db, 'users', fbUid, 'campaigns'));
+          await setDoc(campRef, { ...campObj, id: campRef.id, ownerId: fbUid });
+          for (const c of pendingBatch.contacts) {
+            const reportRef = doc(collection(db, 'users', fbUid, 'reports'));
+            await setDoc(reportRef, {
+              id: reportRef.id,
+              ownerId: fbUid,
+              name: c.name,
+              phone: c.phone,
+              status: 'Submitted',
+              detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
+              hasMedia: Boolean(pendingBatch.media),
+              at: new Date().toISOString()
+            });
+          }
+        } else {
+          campaignsList.unshift(campObj);
+          const nowIso = new Date().toISOString();
+          for (const c of pendingBatch.contacts) {
+            reportsList.unshift({
+              id: `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              ownerId,
+              name: c.name,
+              phone: c.phone,
+              status: 'Submitted',
+              detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
+              hasMedia: Boolean(pendingBatch.media),
+              at: nowIso
+            });
+          }
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
 
         closeReviewModal();
@@ -4223,8 +4356,15 @@
       if (!currentUser || reportsList.length === 0) return;
       if (!confirm('Clear all delivery report logs from this workspace?')) return;
       try {
-        for (const r of reportsList) {
-          await deleteDoc(doc(db, 'users', currentUser.uid, 'reports', r.id));
+        if (canUseFirestore(getFirestoreUid())) {
+          const fbUid = getFirestoreUid();
+          for (const r of reportsList) {
+            await deleteDoc(doc(db, 'users', fbUid, 'reports', r.id));
+          }
+        } else {
+          reportsList = [];
+          renderAllWorkspaceViews();
+          await persistWorkspaceState();
         }
         window.showToast('Reports cleared.');
       } catch (err) {
@@ -4443,24 +4583,6 @@
       if (mobBtn) mobBtn.classList.add('active');
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function switchAuthTab(type) {
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('formLogin').classList.add('hidden');
-      document.getElementById('formRegister').classList.add('hidden');
-      document.getElementById('formForgot').classList.add('hidden');
-
-      if (type === 'login') {
-        document.getElementById('tabLogin').classList.add('active');
-        document.getElementById('formLogin').classList.remove('hidden');
-      } else if (type === 'register') {
-        document.getElementById('tabRegister').classList.add('active');
-        document.getElementById('formRegister').classList.remove('hidden');
-      } else if (type === 'forgot') {
-        document.getElementById('tabForgot').classList.add('active');
-        document.getElementById('formForgot').classList.remove('hidden');
-      }
     }
 
     function openAddContactModal() {

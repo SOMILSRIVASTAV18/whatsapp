@@ -18,13 +18,28 @@ if (process.env.FIREBASE_PROJECT_ID && !firebaseConfig.projectId) {
 let appAdmin = null;
 let authAdmin = null;
 try {
-  const { getApps, initializeApp, getApp } = require('firebase-admin/app');
+  const { getApps, initializeApp, getApp, cert } = require('firebase-admin/app');
   const { getAuth } = require('firebase-admin/auth');
   const apps = getApps();
   if (!apps.length) {
-    appAdmin = firebaseConfig.projectId
-      ? initializeApp({ projectId: firebaseConfig.projectId })
-      : initializeApp();
+    let serviceAccount = null;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      } catch (e) {
+        console.warn('Invalid FIREBASE_SERVICE_ACCOUNT_JSON env var:', e.message);
+      }
+    }
+    if (serviceAccount) {
+      appAdmin = initializeApp({
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id || firebaseConfig.projectId
+      });
+    } else if (firebaseConfig.projectId) {
+      appAdmin = initializeApp({ projectId: firebaseConfig.projectId });
+    } else {
+      appAdmin = initializeApp();
+    }
   } else {
     appAdmin = getApp();
   }
@@ -89,6 +104,36 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/firebase-config', (_req, res) => {
   res.json(firebaseConfig);
 });
+
+// Persistent workspace store (data/store.json)
+const STORE_PATH = process.env.WORKSPACE_DATA_PATH || path.join(__dirname, 'data', 'store.json');
+function readStoreFile() {
+  try {
+    if (!fs.existsSync(STORE_PATH)) return {};
+    const raw = fs.readFileSync(STORE_PATH, 'utf8');
+    return raw && raw.trim() ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.warn('Workspace store read warning:', err.message);
+    return {};
+  }
+}
+
+function writeStoreFile(store) {
+  try {
+    const dir = path.dirname(STORE_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.warn('Workspace store write warning:', err.message);
+    return false;
+  }
+}
+
+function getWorkspaceKey(user) {
+  const email = user && user.email ? String(user.email).trim().toLowerCase() : '';
+  return email || (user && user.uid ? String(user.uid) : 'default_workspace');
+}
 
 // Per-user WhatsApp client instances and state
 const userClients = new Map();
@@ -411,6 +456,67 @@ async function startUserWhatsApp(userId) {
     state.message = `Failed to start WhatsApp: ${safeText(err.message, 200)}`;
   }
 }
+
+// Optional Firebase Custom Token bridge for SSO users (when service account signing is configured)
+app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, async (req, res) => {
+  if (!authAdmin) {
+    return res.json({ ok: false, reason: 'firebase_admin_unavailable' });
+  }
+  try {
+    const cleanUid = String(req.user.uid || getWorkspaceKey(req.user))
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 128);
+    const customToken = await authAdmin.createCustomToken(cleanUid, {
+      email: req.user.email || undefined,
+      tsdcSso: true
+    });
+    return res.json({ ok: true, customToken, uid: cleanUid });
+  } catch (err) {
+    return res.json({ ok: false, reason: 'custom_token_unavailable' });
+  }
+});
+
+// Per-user persistent workspace endpoints (fallback/mirror for TSDC SSO users without Firebase custom tokens)
+app.get('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
+  const store = readStoreFile();
+  const workspaces = (store && typeof store.tsdcWorkspaces === 'object' && store.tsdcWorkspaces) || {};
+  const key = getWorkspaceKey(req.user);
+  const ws = workspaces[key] || {
+    profile: {
+      name: (req.user.email ? req.user.email.split('@')[0] : 'TSDC User'),
+      company: ''
+    },
+    lists: [],
+    contacts: [],
+    campaigns: [],
+    reports: [],
+    updatedAt: null
+  };
+  res.json(ws);
+});
+
+app.put('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
+  const store = readStoreFile();
+  if (!store.tsdcWorkspaces || typeof store.tsdcWorkspaces !== 'object') {
+    store.tsdcWorkspaces = {};
+  }
+  const key = getWorkspaceKey(req.user);
+  const existing = store.tsdcWorkspaces[key] || {};
+  const body = req.body || {};
+
+  const updated = {
+    profile: body.profile && typeof body.profile === 'object' ? body.profile : (existing.profile || { name: '', company: '' }),
+    lists: Array.isArray(body.lists) ? body.lists : (existing.lists || []),
+    contacts: Array.isArray(body.contacts) ? body.contacts : (existing.contacts || []),
+    campaigns: Array.isArray(body.campaigns) ? body.campaigns : (existing.campaigns || []),
+    reports: Array.isArray(body.reports) ? body.reports : (existing.reports || []),
+    updatedAt: new Date().toISOString()
+  };
+
+  store.tsdcWorkspaces[key] = updated;
+  writeStoreFile(store);
+  res.json({ ok: true, updatedAt: updated.updatedAt });
+});
 
 // Protected WhatsApp Routes
 app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {

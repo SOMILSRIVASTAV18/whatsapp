@@ -28,11 +28,24 @@ try {
 let appAdmin = null;
 let authAdmin = null;
 try {
-  const { getApps, initializeApp, getApp } = require('firebase-admin/app');
+  const { getApps, initializeApp, getApp, cert } = require('firebase-admin/app');
   const { getAuth } = require('firebase-admin/auth');
   const apps = getApps();
   if (!apps.length) {
-    if (firebaseConfig.projectId) {
+    let serviceAccount = null;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      } catch (e) {
+        console.warn('Invalid FIREBASE_SERVICE_ACCOUNT_JSON env var:', e.message);
+      }
+    }
+    if (serviceAccount) {
+      appAdmin = initializeApp({
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id || firebaseConfig.projectId
+      });
+    } else if (firebaseConfig.projectId) {
       appAdmin = initializeApp({
         projectId: firebaseConfig.projectId
       });
@@ -66,6 +79,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.header('Access-Control-Allow-Origin', origin);
+  res.header('Vary', 'Origin');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-User-Email, X-TSDC-Token');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -84,6 +98,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/firebase-config', (_req, res) => {
   res.json(firebaseConfig);
 });
+
+// Persistent workspace store (data/store.json)
+const STORE_PATH = process.env.WORKSPACE_DATA_PATH || path.join(__dirname, 'data', 'store.json');
+function readStoreFile() {
+  try {
+    if (!fs.existsSync(STORE_PATH)) return {};
+    const raw = fs.readFileSync(STORE_PATH, 'utf8');
+    return raw && raw.trim() ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.warn('Workspace store read warning:', err.message);
+    return {};
+  }
+}
+
+function writeStoreFile(store) {
+  try {
+    const dir = path.dirname(STORE_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.warn('Workspace store write warning:', err.message);
+    return false;
+  }
+}
+
+function getWorkspaceKey(user) {
+  const email = user && user.email ? String(user.email).trim().toLowerCase() : '';
+  return email || (user && user.uid ? String(user.uid) : 'default_workspace');
+}
 
 // Per-user WhatsApp client instances and state
 const userClients = new Map();
@@ -152,7 +196,8 @@ async function authMiddleware(req, res, next) {
 
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email || String(tsdcEmail || '').trim()
+      email: decodedToken.email || String(tsdcEmail || '').trim(),
+      tokenEmail: decodedToken.email || ''
     };
     next();
   } catch (err) {
@@ -167,15 +212,29 @@ const broadcastAccessCache = new Map();
 // Express middleware for WhatsApp Broadcast (broadcast.tsdc.in)
 // Enforces HTTP 403 SUBSCRIPTION_EXPIRED, SUBSCRIPTION_SUSPENDED, or NO_ACTIVE_SUBSCRIPTION
 async function requireBroadcastAccess(req, res, next) {
-  const userEmail = req.headers['x-user-email'] || req.query.email || (req.user && req.user.email);
+  const headerOrQueryEmail = req.headers['x-user-email'] || req.query.email;
+  const tokenEmail = req.user && req.user.tokenEmail ? String(req.user.tokenEmail).trim() : '';
+
+  if (tokenEmail && headerOrQueryEmail && String(headerOrQueryEmail).trim().toLowerCase() !== tokenEmail.toLowerCase()) {
+    return res.status(403).json({
+      allowed: false,
+      status: 'denied',
+      code: 'EMAIL_MISMATCH',
+      checkedEmail: String(headerOrQueryEmail).trim(),
+      message: `Authenticated token email (${tokenEmail}) does not match the requested user email (${String(headerOrQueryEmail).trim()}).`,
+      salesEmail: 'sales@tsdc.in',
+      appsUrl: 'https://apps.tsdc.in'
+    });
+  }
+
+  const userEmail = String(tokenEmail || headerOrQueryEmail || (req.user && req.user.email) || '').trim();
   const apiKey = req.headers['x-tsdc-token'];
 
   if (!userEmail && !apiKey) {
     return res.status(401).json({ error: 'Authentication required via auth.tsdc.in' });
   }
 
-  const cleanEmail = userEmail ? String(userEmail).trim() : '';
-  const cacheKey = `${cleanEmail.toLowerCase()}|${apiKey ? String(apiKey) : ''}`;
+  const cacheKey = `${userEmail.toLowerCase()}|${apiKey ? String(apiKey) : ''}`;
   const cached = broadcastAccessCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     req.tsdcSubscription = cached.payload;
@@ -184,7 +243,7 @@ async function requireBroadcastAccess(req, res, next) {
 
   try {
     const params = new URLSearchParams({ serviceId: 'broadcast' });
-    if (cleanEmail) params.set('email', cleanEmail);
+    if (userEmail) params.set('email', userEmail);
 
     const checkHeaders = {
       'Accept': 'application/json',
@@ -218,6 +277,7 @@ async function requireBroadcastAccess(req, res, next) {
         allowed: false,
         status: payload.status || 'denied',
         code: payload.code || 'NO_ACTIVE_SUBSCRIPTION',
+        checkedEmail: userEmail || payload.userEmail || '',
         message: payload.message || 'No active subscription found for Broadcast.',
         salesEmail: payload.salesEmail || 'sales@tsdc.in',
         appsUrl: payload.subscribeUrl || 'https://apps.tsdc.in'
@@ -397,6 +457,67 @@ async function startUserWhatsApp(userId) {
     state.message = `Failed to start WhatsApp: ${safeText(err.message, 200)}`;
   }
 }
+
+// Optional Firebase Custom Token bridge for SSO users (when service account signing is configured)
+app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, async (req, res) => {
+  if (!authAdmin) {
+    return res.json({ ok: false, reason: 'firebase_admin_unavailable' });
+  }
+  try {
+    const cleanUid = String(req.user.uid || getWorkspaceKey(req.user))
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 128);
+    const customToken = await authAdmin.createCustomToken(cleanUid, {
+      email: req.user.email || undefined,
+      tsdcSso: true
+    });
+    return res.json({ ok: true, customToken, uid: cleanUid });
+  } catch (err) {
+    return res.json({ ok: false, reason: 'custom_token_unavailable' });
+  }
+});
+
+// Per-user persistent workspace endpoints (fallback/mirror for TSDC SSO users without Firebase custom tokens)
+app.get('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
+  const store = readStoreFile();
+  const workspaces = (store && typeof store.tsdcWorkspaces === 'object' && store.tsdcWorkspaces) || {};
+  const key = getWorkspaceKey(req.user);
+  const ws = workspaces[key] || {
+    profile: {
+      name: (req.user.email ? req.user.email.split('@')[0] : 'TSDC User'),
+      company: ''
+    },
+    lists: [],
+    contacts: [],
+    campaigns: [],
+    reports: [],
+    updatedAt: null
+  };
+  res.json(ws);
+});
+
+app.put('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
+  const store = readStoreFile();
+  if (!store.tsdcWorkspaces || typeof store.tsdcWorkspaces !== 'object') {
+    store.tsdcWorkspaces = {};
+  }
+  const key = getWorkspaceKey(req.user);
+  const existing = store.tsdcWorkspaces[key] || {};
+  const body = req.body || {};
+
+  const updated = {
+    profile: body.profile && typeof body.profile === 'object' ? body.profile : (existing.profile || { name: '', company: '' }),
+    lists: Array.isArray(body.lists) ? body.lists : (existing.lists || []),
+    contacts: Array.isArray(body.contacts) ? body.contacts : (existing.contacts || []),
+    campaigns: Array.isArray(body.campaigns) ? body.campaigns : (existing.campaigns || []),
+    reports: Array.isArray(body.reports) ? body.reports : (existing.reports || []),
+    updatedAt: new Date().toISOString()
+  };
+
+  store.tsdcWorkspaces[key] = updated;
+  writeStoreFile(store);
+  res.json({ ok: true, updatedAt: updated.updatedAt });
+});
 
 // WhatsApp status endpoint
 app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
