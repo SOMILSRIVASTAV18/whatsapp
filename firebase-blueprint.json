@@ -2,14 +2,16 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "User profile with organization and settings",
+      "description": "User profile with organization, workspace settings, and synced backend endpoint",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "company": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 254 },
+        "company": { "type": "string", "maxLength": 160 },
+        "backendUrl": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "email", "createdAt"]
     },
@@ -18,12 +20,14 @@
       "description": "Recipient contact stored in user's isolated desk",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "name": { "type": "string" },
-        "phone": { "type": "string" },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "phone": { "type": "string", "minLength": 8, "maxLength": 20, "pattern": "^[0-9]{8,20}$" },
         "optedIn": { "type": "boolean" },
-        "createdAt": { "type": "string" }
+        "listIds": { "type": "array", "description": "Up to 50 assigned audience list IDs" },
+        "createdAt": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "ownerId", "name", "phone", "optedIn", "createdAt"]
     },
@@ -32,15 +36,17 @@
       "description": "Broadcast campaign record with optional media attachment",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "title": { "type": "string" },
-        "message": { "type": "string" },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 200 },
+        "targetListName": { "type": "string", "maxLength": 120 },
+        "targetListId": { "type": "string", "maxLength": 128 },
+        "message": { "type": "string", "maxLength": 8000 },
         "hasMedia": { "type": "boolean" },
-        "mediaName": { "type": "string" },
-        "mediaMime": { "type": "string" },
+        "mediaName": { "type": "string", "maxLength": 255 },
+        "mediaMime": { "type": "string", "maxLength": 128 },
         "recipientCount": { "type": "number" },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string", "minLength": 1, "maxLength": 64 }
       },
       "required": ["id", "ownerId", "message", "hasMedia", "recipientCount", "createdAt"]
     },
@@ -49,12 +55,13 @@
       "description": "User's audience list or tag segment",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "name": { "type": "string" },
-        "color": { "type": "string" },
-        "description": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "color": { "type": "string", "enum": ["emerald", "blue", "purple", "amber", "rose", "slate"] },
+        "description": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "ownerId", "name", "createdAt"]
     },
@@ -63,14 +70,14 @@
       "description": "Per-recipient delivery log",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "name": { "type": "string" },
-        "phone": { "type": "string" },
-        "status": { "type": "string" },
-        "detail": { "type": "string" },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "phone": { "type": "string", "minLength": 8, "maxLength": 20 },
+        "status": { "type": "string", "enum": ["Submitted", "Failed"] },
+        "detail": { "type": "string", "maxLength": 500 },
         "hasMedia": { "type": "boolean" },
-        "at": { "type": "string" }
+        "at": { "type": "string", "minLength": 1, "maxLength": 64 }
       },
       "required": ["id", "ownerId", "name", "phone", "status", "at"]
     }
@@ -78,7 +85,7 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profile document"
+      "description": "User profile document including optional cross-device backendUrl"
     },
     "/users/{userId}/contacts/{contactId}": {
       "schema": "Contact",

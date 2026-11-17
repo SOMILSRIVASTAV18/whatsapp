@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -36,14 +37,25 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 // ==========================================
 // PUBLIC HEALTH & CONFIG ROUTES
 // ==========================================
-app.get('/', (_req, res) => {
-  res.json({
+app.get('/', (req, res) => {
+  const info = {
     status: 'ok',
     server: 'WhatsApp Broadcast Simple Server',
     engine: 'baileys-ws',
     healthEndpoint: '/api/health',
     time: new Date().toISOString()
-  });
+  };
+  const accept = String(req.headers.accept || '');
+  if (accept.includes('text/html') && req.query.format !== 'json') {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const selfUrl = host ? `${proto}://${host}` : '';
+    const dashUrl = selfUrl
+      ? `https://broadcast.tsdc.in/?backend=${encodeURIComponent(selfUrl)}`
+      : 'https://broadcast.tsdc.in';
+    return res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WhatsApp Broadcast Backend</title></head><body style="font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#111b21;padding:24px;margin:0;"><div style="max-width:460px;margin:40px auto;background:#fff;border-radius:14px;padding:24px;box-shadow:0 6px 20px rgba(0,0,0,0.08);border:1px solid #e9edef;"><div style="display:inline-block;padding:4px 10px;border-radius:999px;background:#e7f7ef;color:#008069;font-size:12px;font-weight:700;margin-bottom:10px;">ONLINE • BAILEYS WS</div><h2 style="margin:0 0 8px;">WhatsApp Broadcast Backend</h2><p style="margin:0 0 18px;color:#54656f;font-size:14px;line-height:1.5;">Your Node.js backend is running. Open your dashboard connected to this server below:</p><a href="${dashUrl}" style="display:block;text-align:center;background:#008069;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:700;font-size:14px;">Open Broadcast Dashboard</a><p style="margin:14px 0 0;font-size:12px;color:#667781;word-break:break-all;">Backend URL: <code>${selfUrl}</code></p></div></body></html>`);
+  }
+  res.json(info);
 });
 
 app.get('/api/health', (_req, res) => {
@@ -203,13 +215,64 @@ function workspaceKey(user) {
   return (user?.email ? String(user.email).trim().toLowerCase() : '') || String(user?.uid || 'default');
 }
 
-app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, (_req, res) => {
+function createFirebaseCustomTokenFromEnv(uid, claims = {}) {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw) return null;
+  const sa = JSON.parse(raw);
+  if (!sa || !sa.client_email || !sa.private_key) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: sa.client_email,
+    sub: sa.client_email,
+    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+    iat: now,
+    exp: now + 3600,
+    uid,
+    claims
+  })).toString('base64url');
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(`${header}.${payload}`);
+  const signature = signer.sign(sa.private_key, 'base64url');
+  return `${header}.${payload}.${signature}`;
+}
+
+app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, (req, res) => {
+  try {
+    const cleanUid = workspaceKey(req.user)
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 128);
+    const customToken = createFirebaseCustomTokenFromEnv(cleanUid, {
+      email: req.user.email || undefined,
+      tsdcSso: true
+    });
+    if (customToken) {
+      return res.json({ ok: true, customToken, uid: cleanUid });
+    }
+  } catch (err) {
+    console.warn('Custom token generation skipped:', err.message);
+  }
   res.json({ ok: false, reason: 'custom_token_unavailable' });
+});
+
+app.get('/api/qr', async (req, res) => {
+  const rawUrl = String(req.query.url || '').trim();
+  if (!rawUrl || rawUrl.length > 1000 || !/^https?:\/\//i.test(rawUrl)) {
+    return res.status(400).json({ error: 'Valid http(s) url parameter required.' });
+  }
+  try {
+    const qrDataUrl = await QRCode.toDataURL(rawUrl, { width: 260, margin: 2 });
+    return res.json({ ok: true, qrDataUrl });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to generate QR code.' });
+  }
 });
 
 app.get('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
   const store = readStore();
-  const ws = store.tsdcWorkspaces?.[workspaceKey(req.user)] || {
+  const key = workspaceKey(req.user);
+  const uidFallback = req.user?.uid && store.tsdcWorkspaces?.[req.user.uid];
+  const ws = store.tsdcWorkspaces?.[key] || uidFallback || {
     profile: { name: req.user.email ? req.user.email.split('@')[0] : 'TSDC User', company: '' },
     lists: [],
     contacts: [],
@@ -306,9 +369,9 @@ const userStates = new Map();
 const userBusy = new Map();
 const manualStops = new Set();
 
-function getWaState(uid) {
-  if (!userStates.has(uid)) {
-    userStates.set(uid, {
+function getWaState(accountKey) {
+  if (!userStates.has(accountKey)) {
+    userStates.set(accountKey, {
       status: 'disconnected',
       qrDataUrl: null,
       message: 'WhatsApp session disconnected. Click "Start Pairing" to generate a QR code.',
@@ -316,22 +379,28 @@ function getWaState(uid) {
       lastSync: null
     });
   }
-  return userStates.get(uid);
+  return userStates.get(accountKey);
 }
 
-function safeUserDir(uid) {
-  return path.join(AUTH_BASE_DIR, String(uid).replace(/[^a-zA-Z0-9_-]/g, '_'));
+function safeUserDir(accountKey, legacyUid = null) {
+  const primary = path.join(AUTH_BASE_DIR, String(accountKey).replace(/[^a-zA-Z0-9_-]/g, '_'));
+  if (fs.existsSync(path.join(primary, 'creds.json'))) return primary;
+  if (legacyUid && legacyUid !== accountKey) {
+    const legacy = path.join(AUTH_BASE_DIR, String(legacyUid).replace(/[^a-zA-Z0-9_-]/g, '_'));
+    if (fs.existsSync(path.join(legacy, 'creds.json'))) return legacy;
+  }
+  return primary;
 }
 
-async function startUserWhatsApp(userId) {
-  const state = getWaState(userId);
-  manualStops.delete(userId);
+async function startUserWhatsApp(accountKey, legacyUid = null) {
+  const state = getWaState(accountKey);
+  manualStops.delete(accountKey);
 
-  const prev = userSockets.get(userId);
+  const prev = userSockets.get(accountKey);
   if (prev) {
     try { prev.ev.removeAllListeners(); } catch (_) {}
     try { prev.end(); } catch (_) {}
-    userSockets.delete(userId);
+    userSockets.delete(accountKey);
   }
 
   state.status = 'starting';
@@ -340,7 +409,7 @@ async function startUserWhatsApp(userId) {
   state.lastSync = new Date().toISOString();
 
   try {
-    const authDir = safeUserDir(userId);
+    const authDir = safeUserDir(accountKey, legacyUid);
     fs.mkdirSync(authDir, { recursive: true });
     const { state: authState, saveCreds } = await useMultiFileAuthState(authDir);
     const fallbackVersion = { version: [2, 3000, 1043857760] };
@@ -361,11 +430,11 @@ async function startUserWhatsApp(userId) {
       keepAliveIntervalMs: 25000
     });
 
-    userSockets.set(userId, sock);
+    userSockets.set(accountKey, sock);
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', async (update) => {
-      if (userSockets.get(userId) !== sock) return;
+      if (userSockets.get(accountKey) !== sock) return;
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -395,14 +464,14 @@ async function startUserWhatsApp(userId) {
       }
 
       if (connection === 'close') {
-        userSockets.delete(userId);
-        if (manualStops.has(userId)) {
-          manualStops.delete(userId);
+        userSockets.delete(accountKey);
+        if (manualStops.has(accountKey)) {
+          manualStops.delete(accountKey);
           return;
         }
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         if (statusCode === DisconnectReason.restartRequired) {
-          return startUserWhatsApp(userId);
+          return startUserWhatsApp(accountKey, legacyUid);
         }
         if (statusCode === DisconnectReason.loggedOut) {
           try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (_) {}
@@ -431,7 +500,16 @@ async function startUserWhatsApp(userId) {
 // WHATSAPP API ROUTES
 // ==========================================
 app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
-  const s = getWaState(req.user.uid);
+  const accountKey = workspaceKey(req.user);
+  const s = getWaState(accountKey);
+  if (
+    s.status === 'disconnected'
+    && !userSockets.has(accountKey)
+    && !manualStops.has(accountKey)
+    && fs.existsSync(path.join(safeUserDir(accountKey, req.user.uid), 'creds.json'))
+  ) {
+    startUserWhatsApp(accountKey, req.user.uid);
+  }
   res.json({
     status: s.status,
     qrDataUrl: s.qrDataUrl,
@@ -439,26 +517,27 @@ app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
     connected: s.status === 'connected',
     connectedPhone: s.connectedPhone,
     lastSync: s.lastSync,
-    userId: req.user.uid
+    userId: accountKey
   });
 });
 
 app.post('/api/whatsapp/connect', authMiddleware, requireBroadcastAccess, (req, res) => {
-  startUserWhatsApp(req.user.uid);
+  const accountKey = workspaceKey(req.user);
+  startUserWhatsApp(accountKey, req.user.uid);
   res.json({ ok: true, message: 'WhatsApp pairing started. Waiting for QR code…' });
 });
 
 app.post('/api/whatsapp/disconnect', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const uid = req.user.uid;
-  manualStops.add(uid);
-  const sock = userSockets.get(uid);
+  const accountKey = workspaceKey(req.user);
+  manualStops.add(accountKey);
+  const sock = userSockets.get(accountKey);
   if (sock) {
     try { await sock.logout(); } catch (_) {}
     try { sock.end(); } catch (_) {}
-    userSockets.delete(uid);
+    userSockets.delete(accountKey);
   }
-  try { fs.rmSync(safeUserDir(uid), { recursive: true, force: true }); } catch (_) {}
-  const s = getWaState(uid);
+  try { fs.rmSync(safeUserDir(accountKey, req.user.uid), { recursive: true, force: true }); } catch (_) {}
+  const s = getWaState(accountKey);
   s.status = 'disconnected';
   s.qrDataUrl = null;
   s.connectedPhone = null;
@@ -499,7 +578,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, asyn
 });
 
 app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const uid = req.user.uid;
+  const uid = workspaceKey(req.user);
   const state = getWaState(uid);
   const sock = userSockets.get(uid);
 

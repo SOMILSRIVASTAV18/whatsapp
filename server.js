@@ -477,12 +477,25 @@ app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, asy
   }
 });
 
+app.get('/api/qr', async (req, res) => {
+  const rawUrl = String(req.query.url || '').trim();
+  if (!rawUrl || rawUrl.length > 1000 || !/^https?:\/\//i.test(rawUrl)) {
+    return res.status(400).json({ error: 'Valid http(s) url parameter required.' });
+  }
+  try {
+    const qrDataUrl = await QRCode.toDataURL(rawUrl, { width: 260, margin: 2 });
+    return res.json({ ok: true, qrDataUrl });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to generate QR code.' });
+  }
+});
+
 // Per-user persistent workspace endpoints (fallback/mirror for TSDC SSO users without Firebase custom tokens)
 app.get('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
   const store = readStoreFile();
   const workspaces = (store && typeof store.tsdcWorkspaces === 'object' && store.tsdcWorkspaces) || {};
   const key = getWorkspaceKey(req.user);
-  const ws = workspaces[key] || {
+  const ws = workspaces[key] || (req.user?.uid && workspaces[req.user.uid]) || {
     profile: {
       name: (req.user.email ? req.user.email.split('@')[0] : 'TSDC User'),
       company: ''
@@ -521,7 +534,8 @@ app.put('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => 
 
 // WhatsApp status endpoint
 app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
-  const state = getWaState(req.user.uid);
+  const accountKey = getWorkspaceKey(req.user);
+  const state = getWaState(accountKey);
   res.json({
     status: state.status,
     qrDataUrl: state.qrDataUrl,
@@ -529,19 +543,19 @@ app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
     connected: state.status === 'connected',
     connectedPhone: state.connectedPhone,
     lastSync: state.lastSync,
-    userId: req.user.uid
+    userId: accountKey
   });
 });
 
 // Trigger pairing
 app.post('/api/whatsapp/connect', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  startUserWhatsApp(req.user.uid);
+  startUserWhatsApp(getWorkspaceKey(req.user));
   res.json({ ok: true, message: 'WhatsApp pairing started. Waiting for QR code…' });
 });
 
 // Disconnect pairing
 app.post('/api/whatsapp/disconnect', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const userId = req.user.uid;
+  const userId = getWorkspaceKey(req.user);
   const client = userClients.get(userId);
   if (client) {
     try { await client.destroy(); } catch (e) {}
@@ -571,7 +585,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, uplo
   const seen = new Set();
   const contacts = [];
   for (let i = 0; i < rows.length; i++) {
-    const c = normalizeContact(rows[i], i, req.user.uid);
+    const c = normalizeContact(rows[i], i, getWorkspaceKey(req.user));
     if (c.phone && !seen.has(c.phone)) {
       seen.add(c.phone);
       contacts.push(c);
@@ -589,7 +603,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, uplo
 // REAL CAMPAIGN BROADCAST (With Media Support)
 // ==========================================
 app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const userId = req.user.uid;
+  const userId = getWorkspaceKey(req.user);
   const state = getWaState(userId);
   const client = userClients.get(userId);
 

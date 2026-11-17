@@ -2,9 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny all access
+    // Global Safety Net (Default Deny)
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
     }
 
     function isSignedIn() {
@@ -16,54 +24,148 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // User profile document
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['id', 'email', 'createdAt'])
+        && data.keys().hasOnly(['id', 'name', 'email', 'company', 'backendUrl', 'createdAt', 'updatedAt'])
+        && data.id == userId
+        && isValidId(data.id)
+        && data.email is string && data.email.size() <= 254
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64
+        && isOptionalString(data, 'name', 120)
+        && isOptionalString(data, 'company', 160)
+        && isOptionalString(data, 'backendUrl', 500)
+        && isOptionalString(data, 'updatedAt', 64);
+    }
+
+    function isValidListIds(data) {
+      return !('listIds' in data) || (
+        data.listIds is list
+        && data.listIds.size() <= 50
+        && (data.listIds.size() == 0 || (data.listIds[0] is string && data.listIds[0].size() <= 128))
+      );
+    }
+
+    function isValidContact(data, contactId) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'phone', 'optedIn', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'name', 'phone', 'optedIn', 'listIds', 'createdAt', 'updatedAt'])
+        && data.id == contactId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 150
+        && data.phone is string && data.phone.size() >= 8 && data.phone.size() <= 20 && data.phone.matches('^[0-9]{8,20}$')
+        && data.optedIn is bool
+        && isValidListIds(data)
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64
+        && isOptionalString(data, 'updatedAt', 64);
+    }
+
+    function isValidContactList(data, listId) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'name', 'color', 'description', 'createdAt', 'updatedAt'])
+        && data.id == listId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && (!('color' in data) || (data.color is string && data.color in ['emerald', 'blue', 'purple', 'amber', 'rose', 'slate']))
+        && isOptionalString(data, 'description', 300)
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64
+        && isOptionalString(data, 'updatedAt', 64);
+    }
+
+    function isValidCampaign(data, campaignId) {
+      return data.keys().hasAll(['id', 'ownerId', 'message', 'hasMedia', 'recipientCount', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'title', 'targetListName', 'targetListId', 'message', 'hasMedia', 'mediaName', 'mediaMime', 'recipientCount', 'createdAt'])
+        && data.id == campaignId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.message is string && data.message.size() <= 8000
+        && data.hasMedia is bool
+        && data.recipientCount is number && data.recipientCount >= 1 && data.recipientCount <= 500
+        && isOptionalString(data, 'title', 200)
+        && isOptionalString(data, 'targetListName', 120)
+        && isOptionalString(data, 'targetListId', 128)
+        && isOptionalString(data, 'mediaName', 255)
+        && isOptionalString(data, 'mediaMime', 128)
+        && data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64;
+    }
+
+    function isValidReport(data, reportId) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'phone', 'status', 'at'])
+        && data.keys().hasOnly(['id', 'ownerId', 'name', 'phone', 'status', 'detail', 'hasMedia', 'at'])
+        && data.id == reportId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 150
+        && data.phone is string && data.phone.size() >= 8 && data.phone.size() <= 20
+        && data.status is string && data.status in ['Submitted', 'Failed']
+        && isOptionalString(data, 'detail', 500)
+        && (!('hasMedia' in data) || data.hasMedia is bool)
+        && data.at is string && data.at.size() >= 1 && data.at.size() <= 64;
+    }
+
+    // User profile document (private PII, owner-only)
     match /users/{userId} {
       allow get: if isValidId(userId) && isOwner(userId);
-      allow create: if isValidId(userId) && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isValidId(userId) && isOwner(userId) && request.resource.data.id == userId;
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'company', 'backendUrl', 'updatedAt']);
       allow delete: if isValidId(userId) && isOwner(userId);
 
       // Isolated user contacts
       match /contacts/{contactId} {
         allow get, delete: if isValidId(userId) && isValidId(contactId) && isOwner(userId);
-        allow list: if isValidId(userId) && isOwner(userId);
-        allow create: if isValidId(userId) && isValidId(contactId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
-        allow update: if isValidId(userId) && isValidId(contactId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
-      }
-
-      // Isolated user campaigns
-      match /campaigns/{campaignId} {
-        allow get, delete: if isValidId(userId) && isValidId(campaignId) && isOwner(userId);
-        allow list: if isValidId(userId) && isOwner(userId);
-        allow create: if isValidId(userId) && isValidId(campaignId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
-        allow update: if isValidId(userId) && isValidId(campaignId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(contactId) && isOwner(userId) && isValidContact(incoming(), contactId);
+        allow update: if isValidId(userId) && isValidId(contactId) && isOwner(userId) && isValidContact(incoming(), contactId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'optedIn', 'listIds', 'updatedAt']);
       }
 
       // Isolated user contact lists
       match /lists/{listId} {
         allow get, delete: if isValidId(userId) && isValidId(listId) && isOwner(userId);
-        allow list: if isValidId(userId) && isOwner(userId);
-        allow create: if isValidId(userId) && isValidId(listId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
-        allow update: if isValidId(userId) && isValidId(listId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(listId) && isOwner(userId) && isValidContactList(incoming(), listId);
+        allow update: if isValidId(userId) && isValidId(listId) && isOwner(userId) && isValidContactList(incoming(), listId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'color', 'description', 'updatedAt']);
+      }
+
+      // Isolated user campaigns
+      match /campaigns/{campaignId} {
+        allow get, delete: if isValidId(userId) && isValidId(campaignId) && isOwner(userId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(campaignId) && isOwner(userId) && isValidCampaign(incoming(), campaignId);
+        allow update: if isValidId(userId) && isValidId(campaignId) && isOwner(userId) && isValidCampaign(incoming(), campaignId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title']);
       }
 
       // Isolated user broadcast reports
       match /reports/{reportId} {
         allow get, delete: if isValidId(userId) && isValidId(reportId) && isOwner(userId);
-        allow list: if isValidId(userId) && isOwner(userId);
-        allow create: if isValidId(userId) && isValidId(reportId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
-        allow update: if isValidId(userId) && isValidId(reportId) && isOwner(userId)
-          && request.resource.data.ownerId == request.auth.uid;
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid && isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(reportId) && isOwner(userId) && isValidReport(incoming(), reportId);
+        allow update: if isValidId(userId) && isValidId(reportId) && isOwner(userId) && isValidReport(incoming(), reportId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().at == existing().at
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'detail']);
       }
     }
   }

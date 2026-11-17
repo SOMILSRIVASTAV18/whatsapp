@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>WhatsApp Personal Broadcast Desk</title>
   <meta name="description" content="Professional multi-user dashboard for personal WhatsApp broadcasts with Firebase authentication, contact segmentation, campaign composer, and delivery reports.">
   <meta property="og:title" content="WhatsApp Personal Broadcast Desk">
@@ -55,8 +55,7 @@
     html, body {
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden !important;
-      touch-action: pan-y;
+      overflow-x: clip;
       -webkit-text-size-adjust: 100%;
       background-color: var(--wa-bg);
       color: var(--slate-900);
@@ -64,7 +63,11 @@
       font-size: 13.5px;
       line-height: 1.5;
       min-height: 100vh;
+      min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
+    }
+    body:has(.modal-overlay:not(.hidden)) {
+      overflow: hidden;
     }
 
     /* Custom Scrollbar */
@@ -117,9 +120,10 @@
       display: grid;
       grid-template-columns: 260px minmax(0, 1fr);
       min-height: 100vh;
+      min-height: 100dvh;
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden;
+      overflow-x: clip;
       min-width: 0;
       box-sizing: border-box;
     }
@@ -279,7 +283,7 @@
     .main-area {
       min-width: 0;
       max-width: 100%;
-      overflow-x: hidden;
+      overflow-x: clip;
       display: flex;
       flex-direction: column;
       position: relative;
@@ -381,7 +385,7 @@
       flex: 1;
       min-width: 0;
       box-sizing: border-box;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
     .tab-section {
       display: none;
@@ -455,7 +459,7 @@
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
     .card-header {
       display: flex;
@@ -786,6 +790,8 @@
       max-width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
       border: 1px solid var(--slate-200);
       border-radius: var(--radius-md);
       background: white;
@@ -848,6 +854,8 @@
       overflow-x: auto;
       padding: 4px 2px 8px;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
       align-items: center;
     }
     .list-pill {
@@ -1009,17 +1017,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 14px;
       z-index: 150;
       box-sizing: border-box;
+      overscroll-behavior: contain;
     }
     .modal-content {
       background: white;
       border-radius: var(--radius-lg);
       max-width: 520px;
       width: 100%;
-      max-height: calc(100vh - 40px);
+      max-height: calc(100vh - 28px);
+      max-height: calc(100dvh - 28px);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       padding: 24px;
       box-shadow: var(--shadow-lg);
@@ -1027,7 +1038,33 @@
       box-sizing: border-box;
     }
     .modal-header {
-      margin-bottom: 18px;
+      margin-bottom: 16px;
+      padding-right: 40px;
+      position: relative;
+    }
+    .modal-close-btn {
+      position: sticky;
+      top: 0;
+      float: right;
+      margin: -4px -4px 4px 10px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      color: var(--slate-600);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      z-index: 5;
+      transition: all 0.15s ease;
+    }
+    .modal-close-btn:hover {
+      background: var(--slate-200);
+      color: var(--slate-900);
     }
     .modal-title {
       font-size: 17px;
@@ -1084,13 +1121,14 @@
       right: 0 !important;
       width: 100% !important;
       max-width: 100vw !important;
-      height: 60px;
+      min-height: 60px;
+      height: auto;
       background: var(--slate-900);
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 9999 !important;
       justify-content: space-around;
       align-items: center;
-      padding: 4px 6px env(safe-area-inset-bottom, 4px);
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
       box-sizing: border-box;
       box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
     }
@@ -1101,8 +1139,9 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
+      min-height: 44px;
       color: var(--slate-400);
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 700;
       background: transparent;
       border: none;
@@ -1125,16 +1164,16 @@
     /* RESPONSIVE BREAKPOINTS */
     @media (max-width: 980px) {
       html, body {
-        width: 100% !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
       }
       .app-shell {
         display: block !important;
         width: 100% !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
-        padding-bottom: 84px !important;
+        max-width: 100% !important;
+        overflow-x: clip !important;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
       }
       .sidebar { display: none !important; }
       .mobile-bar { display: flex !important; }
@@ -1142,7 +1181,7 @@
       .main-area {
         width: 100% !important;
         max-width: 100% !important;
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
       }
       .top-header {
         padding: 12px 16px !important;
@@ -1155,6 +1194,7 @@
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        overflow-x: clip !important;
       }
       .grid-2col {
         display: flex !important;
@@ -1173,16 +1213,35 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .form-input, select.form-input, textarea.form-input {
+        font-size: 16px;
+      }
+    }
+
     @media (max-width: 600px) {
       .top-header {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 10px !important;
+        padding: 10px 14px !important;
+        gap: 8px !important;
+      }
+      .header-title-block h1 {
+        font-size: 16px;
       }
       .header-actions {
         display: flex !important;
-        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
         width: 100% !important;
+      }
+      .top-header .header-actions > .btn-primary {
+        display: none !important;
+      }
+      .wa-status-badge {
+        padding: 5px 10px;
+        font-size: 10.5px;
       }
       .card-header {
         flex-direction: column;
@@ -1216,8 +1275,12 @@
       .contact-actions-group {
         width: 100%;
         display: grid !important;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px !important;
+      }
+      .contact-actions-group #bulkAssignListSelect {
+        grid-column: 1 / -1;
+        width: 100% !important;
       }
       .contact-actions-group .btn {
         width: 100%;
@@ -1225,12 +1288,21 @@
         padding: 8px 6px;
       }
 
+      .wa-bubble {
+        max-width: 100%;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+      }
       .modal-content {
         padding: 18px 14px;
         border-radius: var(--radius-md);
+        max-height: calc(100dvh - 20px);
       }
       .toast-container {
-        bottom: 70px;
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px));
         left: 10px;
         right: 10px;
       }
@@ -1240,15 +1312,38 @@
 <body>
 
   <script>
-    // Early-boot TSDC SSO check: capture callback hash or redirect directly to auth.tsdc.in
+    // Early-boot TSDC SSO & cross-device backend link check
     (function earlyTsdcSsoGuard() {
       try {
         localStorage.removeItem('tsdc_token');
         localStorage.removeItem('tsdc_email');
         localStorage.removeItem('tsdc_uid');
 
+        function isJwtFresh(tok) {
+          try {
+            const p = String(tok || '').split('.');
+            if (p.length !== 3) return false;
+            const payload = JSON.parse(decodeURIComponent(escape(atob(p[1].replace(/-/g, '+').replace(/_/g, '/')))));
+            if (payload && payload.exp && (payload.exp * 1000) < (Date.now() + 15000)) return false;
+            return Boolean(payload && (payload.user_id || payload.sub || payload.uid || payload.email));
+          } catch (_) {
+            return false;
+          }
+        }
+
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const queryParams = new URLSearchParams(window.location.search);
+
+        // Support one-tap / QR phone link ?backend=https://...onrender.com (persisted BEFORE SSO redirect)
+        const paramBackend = queryParams.get('backend') || hashParams.get('backend');
+        if (paramBackend && /^https?:\/\//i.test(paramBackend.trim())) {
+          localStorage.setItem('desk_backend_url', paramBackend.trim().replace(/\/+$/, ''));
+          queryParams.delete('backend');
+          const cleanQs = queryParams.toString();
+          const nextUrl = window.location.pathname + (cleanQs ? '?' + cleanQs : '') + window.location.hash;
+          window.history.replaceState(null, '', nextUrl);
+        }
+
         const hashToken = hashParams.get('id_token') || queryParams.get('id_token');
         let hashEmail = hashParams.get('email') || queryParams.get('email');
         const hashUid = hashParams.get('uid') || queryParams.get('uid');
@@ -1263,22 +1358,35 @@
           } catch (_) {}
         }
 
-        if (hashToken && hashEmail) {
+        if (hashToken) {
           sessionStorage.setItem('tsdc_token', hashToken);
-          sessionStorage.setItem('tsdc_email', hashEmail);
+          if (hashEmail) sessionStorage.setItem('tsdc_email', hashEmail);
           if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
+          if (isJwtFresh(hashToken) && hashEmail) {
+            localStorage.setItem('tsdc_sso_token', hashToken);
+            localStorage.setItem('tsdc_sso_email', hashEmail);
+            if (hashUid) localStorage.setItem('tsdc_sso_uid', hashUid);
+          }
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          console.log('Successfully signed in via TSDC SSO as ' + hashEmail);
-        } else if (hashToken) {
-          sessionStorage.setItem('tsdc_token', hashToken);
-          if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } else if (!sessionStorage.getItem('tsdc_token')) {
+          const persistedToken = localStorage.getItem('tsdc_sso_token');
+          const persistedEmail = localStorage.getItem('tsdc_sso_email');
+          const persistedUid = localStorage.getItem('tsdc_sso_uid');
+          if (persistedToken && persistedEmail && isJwtFresh(persistedToken)) {
+            sessionStorage.setItem('tsdc_token', persistedToken);
+            sessionStorage.setItem('tsdc_email', persistedEmail);
+            if (persistedUid) sessionStorage.setItem('tsdc_uid', persistedUid);
+          } else {
+            localStorage.removeItem('tsdc_sso_token');
+            localStorage.removeItem('tsdc_sso_email');
+            localStorage.removeItem('tsdc_sso_uid');
+          }
         }
 
         const token = sessionStorage.getItem('tsdc_token');
         const userEmail = sessionStorage.getItem('tsdc_email');
         if (!token || !userEmail) {
-          const returnUrl = encodeURIComponent(window.location.href);
+          const returnUrl = encodeURIComponent(window.location.origin + window.location.pathname + window.location.search);
           const targetUrl = 'https://auth.tsdc.in/?redirect_uri=' + returnUrl;
           try {
             if (window.top && window.top !== window.self) {
@@ -1378,7 +1486,7 @@
       <div class="view-content">
 
         <!-- 3-DAY PRE-EXPIRY WARNING BANNER -->
-        <div id="tsdcSubscriptionWarningBanner" class="hidden" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #92400e; font-size: 13px;">
+        <div id="tsdcSubscriptionWarningBanner" class="hidden" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: #92400e; font-size: 13px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div>
@@ -1610,22 +1718,22 @@
         <!-- 2. CONNECT SECTION -->
         <section id="section-connect" class="tab-section">
           <!-- Backend Host Banner -->
-          <div id="backendNoticeBanner" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
-            <div style="display: flex; align-items: center; gap: 14px; min-width: 260px;">
+          <div id="backendNoticeBanner" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 220px;">
               <div id="backendStatusIcon" style="width: 40px; height: 40px; border-radius: 10px; background: #e7f7ef; color: var(--wa-teal); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
               </div>
-              <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="min-width: 0; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span style="font-weight: 700; font-size: 14px; color: var(--slate-900);">Node.js WhatsApp Backend</span>
                   <span id="backendBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: var(--slate-200); color: var(--slate-700);">CHECKING</span>
                 </div>
-                <div id="backendEndpointDisplay" class="mono" style="font-size: 12px; color: var(--slate-500); margin-top: 2px;">
+                <div id="backendEndpointDisplay" class="mono" style="font-size: 12px; color: var(--slate-500); margin-top: 2px; word-break: break-all;">
                   Target: Same Origin (default)
                 </div>
               </div>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <button class="btn btn-sm" onclick="window.runBackendTest(true)">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 <span>Test Ping</span>
@@ -1652,8 +1760,8 @@
 
               <!-- Backend Offline Warning Banner -->
               <div id="backendOfflineAlert" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e;">
-                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
-                  <div>
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                  <div style="min-width: 0; flex: 1 1 220px;">
                     <div style="font-weight: 700; color: #78350f; margin-bottom: 2px; display: flex; align-items: center; gap: 6px;">
                       <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                       <span>Node.js Backend Required for WhatsApp Pairing</span>
@@ -1735,9 +1843,17 @@
             <div class="card-header">
               <div>
                 <h2 class="card-title">Audience & Contact Lists</h2>
-                <p class="card-desc">Organize contacts into custom broadcast lists, import CSVs, or add contacts individually.</p>
+                <p class="card-desc">Organize contacts into custom broadcast lists, import CSVs, or sync across devices.</p>
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-sm" id="btnSyncContactsNow" onclick="window.syncNow()">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  <span>Sync Contacts</span>
+                </button>
+                <button class="btn btn-sm hidden" id="btnEnableCloudSyncContacts" onclick="window.linkFirebaseGoogleSync()" style="border-color: var(--wa-teal); color: var(--wa-teal);">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                  <span>Enable Cloud Sync</span>
+                </button>
                 <button class="btn btn-sm" onclick="window.openCreateListModal()">
                   <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   <span>Create List</span>
@@ -1959,6 +2075,30 @@
                 <button type="button" class="btn" style="width: 100%;" onclick="window.sendResetEmailCurrent()">Send Password Reset Email</button>
               </div>
 
+              <!-- Cross-Device & Cloud Sync -->
+              <div class="card">
+                <div class="card-header" style="margin-bottom: 10px;">
+                  <div>
+                    <h2 class="card-title">Cross-Device Sync (Laptop ↔ Phone)</h2>
+                    <p class="card-desc">Keep your contacts, lists, and Render backend linked across laptop and phone.</p>
+                  </div>
+                </div>
+                <div style="background: var(--slate-50); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); font-size: 12px; margin-bottom: 12px;">
+                  <div style="color: var(--slate-500); margin-bottom: 2px;">Active Sync Engine:</div>
+                  <div id="profileSyncModeText" style="font-weight: 700; color: var(--wa-teal);">Checking…</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <button type="button" class="btn btn-primary" id="btnProfileCloudSync" onclick="window.linkFirebaseGoogleSync()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                    <span>Link Google for Realtime Cloud Sync</span>
+                  </button>
+                  <button type="button" class="btn" onclick="window.openBackendConfigModal()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    <span>Phone Quick-Connect Link & Backend Settings</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- Session Info -->
               <div class="card">
                 <h2 class="card-title" style="margin-bottom: 10px;">Active Session</h2>
@@ -2008,6 +2148,7 @@
   <!-- ADD CONTACT MODAL -->
   <div id="addContactModal" class="modal-overlay hidden">
     <div class="modal-content">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="closeAddContactModal()">&times;</button>
       <div class="modal-header">
         <h3 class="modal-title">Add Contact</h3>
         <p class="modal-desc">Add a recipient with country code (e.g. 14155552671 or 919876543210).</p>
@@ -2043,6 +2184,7 @@
   <!-- CREATE LIST MODAL -->
   <div id="createListModal" class="modal-overlay hidden">
     <div class="modal-content">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="window.closeCreateListModal()">&times;</button>
       <div class="modal-header">
         <h3 class="modal-title">Create Contact List</h3>
         <p class="modal-desc">Create a segmented audience list for targeted WhatsApp broadcasts.</p>
@@ -2078,6 +2220,7 @@
   <!-- EDIT LIST MODAL -->
   <div id="editListModal" class="modal-overlay hidden">
     <div class="modal-content">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="window.closeEditListModal()">&times;</button>
       <div class="modal-header">
         <h3 class="modal-title">Edit Contact List</h3>
         <p class="modal-desc">Update list details.</p>
@@ -2114,6 +2257,7 @@
   <!-- MANAGE CONTACT LISTS MODAL -->
   <div id="contactListsModal" class="modal-overlay hidden">
     <div class="modal-content">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="window.closeContactListsModal()">&times;</button>
       <div class="modal-header">
         <h3 class="modal-title">Manage Lists for Contact</h3>
         <p class="modal-desc" id="contactListsModalDesc">Select lists this contact belongs to.</p>
@@ -2131,6 +2275,7 @@
   <!-- CAMPAIGN REVIEW & CONSENT MODAL -->
   <div id="reviewModal" class="modal-overlay hidden">
     <div class="modal-content">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="closeReviewModal()">&times;</button>
       <div class="modal-header">
         <div style="font-size: 11px; font-weight: 700; color: var(--wa-teal); text-transform: uppercase;">Confirmation Step</div>
         <h3 class="modal-title" style="margin-top: 4px;">Confirm WhatsApp Broadcast</h3>
@@ -2156,21 +2301,20 @@
   <!-- BACKEND CONFIG MODAL -->
   <div id="backendConfigModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 560px;">
+      <button type="button" class="modal-close-btn" aria-label="Close" onclick="window.closeBackendConfigModal()">&times;</button>
       <div class="modal-header">
         <h3 class="modal-title">WhatsApp Backend Connection Settings</h3>
         <p class="modal-desc">Connect the dashboard to your Node.js runtime (server.js) for WhatsApp Web automation and QR pairing.</p>
       </div>
       <div>
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; font-size: 12px; color: #1e3a8a; line-height: 1.55;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 11px 13px; margin-bottom: 12px; font-size: 11.5px; color: #1e3a8a; line-height: 1.5;">
           <div style="font-weight: 700; color: #1e40af; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
             <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #2563eb;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <span>Why did "Backend server not available" appear?</span>
           </div>
-          Cloudflare Pages only hosts static files (HTML/CSS/JS). WhatsApp Web multi-device automation strictly requires the Node.js backend (<code class="mono">server.js</code>) running with headless Chromium.
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dbeafe; font-size: 11.5px;">
-            <b>Two easy ways to resolve:</b><br>
-            • <b>Option A (Easiest - All-in-One on Render):</b> Deploy this project as a Web Service on Render using the pre-configured <code class="mono">/render</code> folder or Dockerfile. When opening your Render URL, frontend and WhatsApp pairing work automatically on the same host.<br>
-            • <b>Option B (Cloudflare + Render):</b> Keep this frontend on Cloudflare Pages, deploy the backend to Render, and paste your Render URL below.
+          Static hosts (Cloudflare Pages / Netlify) only serve HTML/CSS/JS. WhatsApp pairing requires your Node.js backend running on Render or localhost.
+          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #dbeafe; font-size: 11px;">
+            • <b>Render + Static Frontend:</b> Deploy <code class="mono">/render</code> on Render, then paste your <code class="mono">https://...onrender.com</code> URL below (without port numbers).
           </div>
         </div>
 
@@ -2180,16 +2324,28 @@
           <span style="font-size: 11px; color: var(--slate-500); margin-top: 4px; display: block;">Enter your live Render web service URL or local backend address. Leave empty if visiting the Node.js server directly.</span>
         </div>
 
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
           <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('http://127.0.0.1:3000')">Localhost (127.0.0.1:3000)</button>
           <button type="button" class="btn btn-sm" onclick="window.setBackendPreset('')">Same Origin (Clear)</button>
         </div>
 
-        <div id="backendTestResult" style="display: none; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 16px;"></div>
+        <div id="backendTestResult" style="display: none; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 12px;"></div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <div id="phoneQuickSyncBox" style="display: none; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--slate-900); margin-bottom: 4px;">Open This Same Account & Backend on Your Phone</div>
+          <div style="font-size: 11px; color: var(--slate-600); margin-bottom: 8px;">Scan this QR or copy this link to your phone so it connects to your Render server automatically:</div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm" onclick="window.copyPhoneSyncLink()">Copy Phone Link</button>
+            <button type="button" class="btn btn-sm" onclick="window.showPhoneSyncQr()">Show Phone QR</button>
+          </div>
+          <div id="phoneSyncQrWrap" style="display: none; margin-top: 10px; text-align: center;">
+            <img id="phoneSyncQrImg" alt="Open on Phone QR" style="width: 180px; height: 180px; border-radius: 8px; border: 1px solid var(--slate-200); background: white;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px;">
           <button type="button" class="btn btn-sm" id="btnTestBackend" onclick="window.runBackendTest(false)">Test Connection</button>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="btn" onclick="window.closeBackendConfigModal()">Close</button>
             <button type="button" class="btn btn-primary" onclick="window.saveBackendConfig()">Save & Apply</button>
           </div>
@@ -2209,17 +2365,22 @@
       sendPasswordResetEmail,
       signOut,
       updateProfile,
-      signInWithCustomToken
+      signInWithCustomToken,
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
     import {
       getFirestore,
       doc,
       setDoc,
       getDoc,
+      getDocs,
       updateDoc,
       deleteDoc,
       collection,
       query,
+      where,
       orderBy,
       onSnapshot,
       addDoc,
@@ -2268,7 +2429,7 @@
     };
 
     window.redirectToSso = function() {
-      const returnUrl = encodeURIComponent(window.location.href);
+      const returnUrl = encodeURIComponent(window.location.origin + window.location.pathname + window.location.search);
       const targetUrl = `https://auth.tsdc.in/?redirect_uri=${returnUrl}`;
       try {
         if (window.top && window.top !== window.self) {
@@ -2300,6 +2461,9 @@
         localStorage.removeItem('tsdc_token');
         localStorage.removeItem('tsdc_email');
         localStorage.removeItem('tsdc_uid');
+        localStorage.removeItem('tsdc_sso_token');
+        localStorage.removeItem('tsdc_sso_email');
+        localStorage.removeItem('tsdc_sso_uid');
         window.redirectToSso();
         return false;
       }
@@ -2330,11 +2494,11 @@
     };
 
     window.handleBackendSubscriptionDenial = async function(errData) {
-      let token = sessionStorage.getItem('tsdc_token') || '';
+      let token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_sso_token') || '';
       if (!token && currentUser && typeof currentUser.getIdToken === 'function') {
         try { token = await currentUser.getIdToken(); } catch (_) {}
       }
-      const userEmail = sessionStorage.getItem('tsdc_email') || (currentUser && currentUser.email) || '';
+      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_sso_email') || (currentUser && currentUser.email) || '';
       if (token && userEmail) {
         try {
           const verifyRes = await fetch(
@@ -2367,9 +2531,19 @@
       localStorage.removeItem('tsdc_email');
       localStorage.removeItem('tsdc_uid');
 
-      // 1. Read SSO return hash from auth.tsdc.in if returning from login
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const queryParams = new URLSearchParams(window.location.search);
+
+      // Capture ?backend= param if present on entry
+      const paramBackend = queryParams.get('backend') || hashParams.get('backend');
+      if (paramBackend && /^https?:\/\//i.test(paramBackend.trim())) {
+        localStorage.setItem('desk_backend_url', paramBackend.trim().replace(/\/+$/, ''));
+        queryParams.delete('backend');
+        const cleanQs = queryParams.toString();
+        window.history.replaceState(null, '', window.location.pathname + (cleanQs ? '?' + cleanQs : '') + window.location.hash);
+      }
+
+      // 1. Read SSO return hash from auth.tsdc.in if returning from login
       const hashToken = hashParams.get('id_token') || queryParams.get('id_token');
       let hashEmail = hashParams.get('email') || queryParams.get('email');
       const hashUid = hashParams.get('uid') || queryParams.get('uid');
@@ -2388,6 +2562,9 @@
         sessionStorage.setItem('tsdc_token', hashToken);
         sessionStorage.setItem('tsdc_email', hashEmail);
         if (hashUid) sessionStorage.setItem('tsdc_uid', hashUid);
+        localStorage.setItem('tsdc_sso_token', hashToken);
+        localStorage.setItem('tsdc_sso_email', hashEmail);
+        if (hashUid) localStorage.setItem('tsdc_sso_uid', hashUid);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
         console.log(`Successfully signed in via TSDC SSO as ${hashEmail}`);
       } else if (hashToken) {
@@ -2396,8 +2573,13 @@
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
 
-      const token = sessionStorage.getItem('tsdc_token');
-      const userEmail = sessionStorage.getItem('tsdc_email');
+      const token = sessionStorage.getItem('tsdc_token') || localStorage.getItem('tsdc_sso_token');
+      const userEmail = sessionStorage.getItem('tsdc_email') || localStorage.getItem('tsdc_sso_email');
+
+      if (token && userEmail) {
+        sessionStorage.setItem('tsdc_token', token);
+        sessionStorage.setItem('tsdc_email', userEmail);
+      }
 
       // 2. Direct redirect for unauthenticated visitors to auth.tsdc.in
       if (!token || !userEmail) {
@@ -2529,9 +2711,18 @@
     // ==========================================
     // BACKEND NODE.JS SERVER URL MANAGER
     // ==========================================
+    window.__sameOriginIsStatic = false;
+
     window.isStaticHost = function() {
       const h = window.location.hostname;
-      return h.endsWith('.pages.dev') || h.endsWith('.workers.dev') || h.endsWith('.web.app') || h.endsWith('.firebaseapp.com') || h.endsWith('.netlify.app') || h.endsWith('.vercel.app');
+      return Boolean(window.__sameOriginIsStatic)
+        || h === 'broadcast.tsdc.in'
+        || h.endsWith('.pages.dev')
+        || h.endsWith('.workers.dev')
+        || h.endsWith('.web.app')
+        || h.endsWith('.firebaseapp.com')
+        || h.endsWith('.netlify.app')
+        || h.endsWith('.vercel.app');
     };
 
     window.getBackendUrl = function() {
@@ -2543,12 +2734,19 @@
     };
 
     window.setBackendUrl = function(url) {
-      if (!url || !url.trim()) {
+      const clean = (url || '').trim().replace(/\/+$/, '');
+      if (!clean) {
         localStorage.removeItem('desk_backend_url');
       } else {
-        localStorage.setItem('desk_backend_url', url.trim().replace(/\/+$/, ''));
+        localStorage.setItem('desk_backend_url', clean);
       }
       window.updateBackendStatusBadge();
+      if (typeof syncBackendUrlToFirestore === 'function') {
+        syncBackendUrlToFirestore(clean);
+      }
+      if (typeof updatePhoneSyncUI === 'function') {
+        updatePhoneSyncUI();
+      }
     };
 
     window.getApiUrl = function(path) {
@@ -2557,10 +2755,72 @@
       return base ? `${base}${cleanPath}` : cleanPath;
     };
 
+    async function readJsonSafe(res) {
+      if (!res) return null;
+      const text = await res.text().catch(() => '');
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+      try {
+        return JSON.parse(trimmed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getEffectivePhoneBackendUrl() {
+      const configured = window.getBackendUrl();
+      if (configured) return configured;
+      if (!window.isStaticHost()) return window.location.origin;
+      return '';
+    }
+
+    function buildPhoneSyncUrl() {
+      const backend = getEffectivePhoneBackendUrl();
+      const baseOrigin = window.location.origin;
+      return backend ? `${baseOrigin}/?backend=${encodeURIComponent(backend)}` : '';
+    }
+
+    function updatePhoneSyncUI() {
+      const box = document.getElementById('phoneQuickSyncBox');
+      if (!box) return;
+      const syncUrl = buildPhoneSyncUrl();
+      box.style.display = syncUrl ? 'block' : 'none';
+    }
+
+    window.copyPhoneSyncLink = async function() {
+      const url = buildPhoneSyncUrl();
+      if (!url) return window.showToast('Configure and save your Render backend URL first.', true);
+      try {
+        await navigator.clipboard.writeText(url);
+        window.showToast('Copied Phone Quick-Connect link! Open it on your phone.');
+      } catch (_) {
+        window.showToast(`Phone Link: ${url}`);
+      }
+    };
+
+    window.showPhoneSyncQr = async function() {
+      const syncUrl = buildPhoneSyncUrl();
+      if (!syncUrl) return window.showToast('Configure and save your Render backend URL first.', true);
+      const wrap = document.getElementById('phoneSyncQrWrap');
+      const img = document.getElementById('phoneSyncQrImg');
+      if (!wrap || !img) return;
+      try {
+        const res = await fetch(window.getApiUrl(`/api/qr?url=${encodeURIComponent(syncUrl)}`), { mode: 'cors' });
+        const json = await readJsonSafe(res);
+        if (res.ok && json && json.qrDataUrl) {
+          img.src = json.qrDataUrl;
+          wrap.style.display = 'block';
+        } else {
+          window.showToast('Backend must be online to generate QR. Use Copy Phone Link instead.', true);
+        }
+      } catch (_) {
+        window.showToast('Backend unreachable. Use Copy Phone Link instead.', true);
+      }
+    };
+
     window.isBackendConnected = false;
 
     window.updateBackendStatusBadge = async function(livePing = false) {
-      const pill = document.getElementById('headerBackendPill');
       const dot = document.getElementById('headerBackendDot');
       const text = document.getElementById('headerBackendText');
       const bannerBadge = document.getElementById('backendBadge');
@@ -2572,11 +2832,11 @@
       const isStatic = window.isStaticHost();
 
       if (endpointDisplay) {
-        endpointDisplay.textContent = customUrl ? `Target: ${customUrl}` : (isStatic ? 'Target: Not connected (Cloudflare Pages)' : 'Target: Same Origin (default)');
+        endpointDisplay.textContent = customUrl ? `Target: ${customUrl}` : (isStatic ? 'Target: Not connected (Static Host)' : 'Target: Same Origin (default)');
       }
 
       if (customUrl) {
-        if (text) text.textContent = 'BACKEND: CUSTOM';
+        if (text) text.textContent = 'BACKEND: CHECKING';
       } else if (isStatic) {
         if (text) text.textContent = 'BACKEND: OFFLINE';
         if (dot) dot.style.background = 'var(--danger)';
@@ -2592,8 +2852,11 @@
       }
 
       try {
-        const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors' }).catch(() => null);
-        if (testRes && testRes.ok) {
+        const testRes = await fetch(window.getApiUrl('/api/health'), { method: 'GET', mode: 'cors', cache: 'no-store' }).catch(() => null);
+        const json = testRes && testRes.ok ? await readJsonSafe(testRes) : null;
+        if (json && (json.status === 'ok' || json.server)) {
+          if (!customUrl) window.__sameOriginIsStatic = false;
+          const wasDisconnected = !window.isBackendConnected;
           window.isBackendConnected = true;
           if (dot) dot.style.background = 'var(--success)';
           if (text) text.textContent = customUrl ? 'BACKEND: ONLINE (CUSTOM)' : 'BACKEND: ONLINE';
@@ -2607,15 +2870,23 @@
             statusIcon.style.color = 'var(--wa-teal)';
           }
           if (offlineAlert) offlineAlert.style.display = 'none';
+          updatePhoneSyncUI();
+          if (wasDisconnected && typeof syncWorkspaceFromServer === 'function' && activeStorageMode === 'workspace') {
+            syncWorkspaceFromServer();
+          }
           return true;
+        }
+        if (!customUrl && testRes && testRes.ok && !json) {
+          window.__sameOriginIsStatic = true;
         }
       } catch (_) {}
 
+      const effectiveStatic = window.isStaticHost();
       window.isBackendConnected = false;
-      if (dot) dot.style.background = isStatic ? 'var(--danger)' : 'var(--warning)';
-      if (text) text.textContent = isStatic ? 'BACKEND: NOT FOUND' : 'BACKEND: OFFLINE';
+      if (dot) dot.style.background = effectiveStatic ? 'var(--danger)' : 'var(--warning)';
+      if (text) text.textContent = effectiveStatic ? 'BACKEND: SETUP NEEDED' : 'BACKEND: OFFLINE';
       if (bannerBadge) {
-        bannerBadge.textContent = isStatic ? 'OFFLINE (STATIC HOST)' : 'OFFLINE';
+        bannerBadge.textContent = effectiveStatic ? 'OFFLINE (STATIC HOST)' : 'OFFLINE';
         bannerBadge.style.background = 'var(--warning-soft)';
         bannerBadge.style.color = 'var(--warning)';
       }
@@ -2624,21 +2895,25 @@
         statusIcon.style.color = 'var(--warning)';
       }
       if (offlineAlert) offlineAlert.style.display = 'block';
+      updatePhoneSyncUI();
       return false;
     };
 
     window.openBackendConfigModal = function() {
-      const modal = document.getElementById('backendConfigModal');
       const input = document.getElementById('inputBackendUrl');
       const resultBox = document.getElementById('backendTestResult');
+      const qrWrap = document.getElementById('phoneSyncQrWrap');
       if (input) input.value = window.getBackendUrl();
       if (resultBox) resultBox.style.display = 'none';
-      if (modal) modal.classList.remove('hidden');
+      if (qrWrap) qrWrap.style.display = 'none';
+      updatePhoneSyncUI();
+      if (window.__uiOpenModal) window.__uiOpenModal('backendConfigModal');
+      else document.getElementById('backendConfigModal')?.classList.remove('hidden');
     };
 
     window.closeBackendConfigModal = function() {
-      const modal = document.getElementById('backendConfigModal');
-      if (modal) modal.classList.add('hidden');
+      if (window.__uiCloseModal) window.__uiCloseModal('backendConfigModal');
+      else document.getElementById('backendConfigModal')?.classList.add('hidden');
     };
 
     window.setBackendPreset = function(url) {
@@ -2652,7 +2927,10 @@
       window.setBackendUrl(newUrl);
       window.closeBackendConfigModal();
       window.showToast('Backend server URL updated!');
-      await window.updateBackendStatusBadge(true);
+      const ok = await window.updateBackendStatusBadge(true);
+      if (ok && activeStorageMode === 'workspace' && typeof syncWorkspaceFromServer === 'function') {
+        await syncWorkspaceFromServer(true);
+      }
       window.fetchStatus();
     };
 
@@ -2671,11 +2949,11 @@
 
       try {
         const start = Date.now();
-        const res = await fetch(endpoint, { method: 'GET', mode: 'cors' });
+        const res = await fetch(endpoint, { method: 'GET', mode: 'cors', cache: 'no-store' });
         const latency = Date.now() - start;
+        const json = res.ok ? await readJsonSafe(res) : null;
 
-        if (res.ok) {
-          const json = await res.json().catch(() => ({}));
+        if (res.ok && json && (json.status === 'ok' || json.server)) {
           const successMsg = `Connected successfully! Response time: ${latency}ms (Server: ${json.server || 'WhatsApp Desk'})`;
           if (resultBox) {
             resultBox.style.display = 'block';
@@ -2686,11 +2964,13 @@
           }
           if (showToastAlert) window.showToast(`✓ ${successMsg}`);
           window.updateBackendStatusBadge(true);
+        } else if (res.ok && !json) {
+          throw new Error('Static host returned HTML instead of Node.js JSON. Paste your https://...onrender.com backend URL above.');
         } else {
           throw new Error(`Server returned HTTP ${res.status}: ${res.statusText}`);
         }
       } catch (err) {
-        const errorMsg = `Connection failed: ${err.message}. Make sure node server.js is running and CORS is enabled.`;
+        const errorMsg = `Connection failed: ${err.message}`;
         if (resultBox) {
           resultBox.style.display = 'block';
           resultBox.style.background = 'var(--danger-soft)';
@@ -2747,13 +3027,23 @@
         authInfo: {
           userId: auth && auth.currentUser ? auth.currentUser.uid : null,
           email: auth && auth.currentUser ? auth.currentUser.email : null,
-          emailVerified: auth && auth.currentUser ? auth.currentUser.emailVerified : false
+          emailVerified: auth && auth.currentUser ? auth.currentUser.emailVerified : null,
+          isAnonymous: auth && auth.currentUser ? auth.currentUser.isAnonymous : null,
+          tenantId: auth && auth.currentUser ? auth.currentUser.tenantId : null,
+          providerInfo: auth && auth.currentUser && Array.isArray(auth.currentUser.providerData)
+            ? auth.currentUser.providerData.map(p => ({ providerId: p.providerId, email: p.email }))
+            : []
         },
         operationType,
         path
       };
       console.error('Firestore Error:', JSON.stringify(errInfo));
     }
+
+    let userDocCreatedAt = null;
+    let isWorkspaceSaving = false;
+    let workspaceSyncInFlight = false;
+    let lastKnownServerUpdatedAt = null;
 
     function isValidFirestoreId(id) {
       return typeof id === 'string' && id.length > 0 && id.length <= 128 && /^[a-zA-Z0-9_-]+$/.test(id);
@@ -2801,15 +3091,30 @@
       const storageEl = document.getElementById('diagStorageMode');
       const bannerEl = document.getElementById('diagSecurityBannerText');
       const authTextEl = document.getElementById('profileAuthMethodText');
+      const cloudBtnContacts = document.getElementById('btnEnableCloudSyncContacts');
+      const cloudBtnProfile = document.getElementById('btnProfileCloudSync');
+      const profileSyncMode = document.getElementById('profileSyncModeText');
+
       if (mode === 'firestore') {
-        if (storageEl) storageEl.textContent = 'Firebase Firestore';
-        if (bannerEl) bannerEl.innerHTML = '<b>Firebase Security Rules Active:</b> Access to your contacts, campaigns, and delivery reports is strictly restricted to your authenticated user account.';
-        if (authTextEl) authTextEl.textContent = 'Firebase Authentication (Secure Token)';
+        if (storageEl) storageEl.textContent = 'Firebase Firestore (Realtime Cloud)';
+        if (bannerEl) bannerEl.innerHTML = '<b>Firebase Cloud Sync Active:</b> Contacts, lists, reports, and backend settings sync automatically across your laptop and phone.';
+        if (authTextEl) authTextEl.textContent = 'TSDC SSO + Firebase Cloud Sync';
+        if (cloudBtnContacts) cloudBtnContacts.classList.add('hidden');
+        if (profileSyncMode) profileSyncMode.textContent = 'Realtime Cloud Sync (Firebase Firestore)';
+        if (cloudBtnProfile) {
+          cloudBtnProfile.textContent = 'Cloud Sync Connected ✓';
+          cloudBtnProfile.disabled = true;
+        }
       } else {
-        const backendLabel = window.isBackendConnected ? 'TSDC Workspace (Backend + Local)' : 'TSDC Workspace (Browser Storage)';
+        const backendLabel = window.isBackendConnected ? 'Render Backend Sync + Local' : 'Browser Storage Only (Configure Backend / Cloud Sync)';
         if (storageEl) storageEl.textContent = backendLabel;
-        if (bannerEl) bannerEl.innerHTML = '<b>TSDC SSO Isolation Active:</b> Your contacts, lists, and reports are scoped privately to your TSDC session.';
+        if (bannerEl) bannerEl.innerHTML = '<b>TSDC Workspace Isolation Active:</b> Enable Google Cloud Sync or connect your Render backend URL on both devices to sync contacts.';
         if (authTextEl) authTextEl.textContent = currentUser && currentUser.isTsdc ? 'TSDC Central SSO (auth.tsdc.in)' : 'TSDC Workspace Session';
+        if (cloudBtnContacts) cloudBtnContacts.classList.remove('hidden');
+        if (profileSyncMode) profileSyncMode.textContent = backendLabel;
+        if (cloudBtnProfile) {
+          cloudBtnProfile.disabled = false;
+        }
       }
     }
 
@@ -2823,19 +3128,21 @@
     }
 
     async function persistWorkspaceState() {
+      const nowIso = new Date().toISOString();
       const snapshot = {
         profile: workspaceProfile,
         lists: userLists,
         contacts: contactsList,
         campaigns: campaignsList,
         reports: reportsList,
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
       writeLocalWorkspace(snapshot);
 
       const shouldSyncServer = !window.isStaticHost() || Boolean(window.getBackendUrl());
       if (!shouldSyncServer || !currentUser || window.__tsdcAccessBlocked) return;
 
+      isWorkspaceSaving = true;
       try {
         const authHeaders = await window.getAuthHeaders({ 'Content-Type': 'application/json' });
         const res = await fetch(window.getApiUrl('/api/workspace'), {
@@ -2847,10 +3154,229 @@
           const errData = await res.json().catch(() => ({}));
           if (window.isSubscriptionDenial(res.status, errData)) {
             await window.handleBackendSubscriptionDenial(errData);
+            return;
           }
         }
+        const json = res.ok ? await readJsonSafe(res) : null;
+        if (json && json.ok && json.updatedAt) {
+          lastKnownServerUpdatedAt = json.updatedAt;
+          snapshot.updatedAt = json.updatedAt;
+          writeLocalWorkspace(snapshot);
+        }
       } catch (_) {}
+      finally {
+        isWorkspaceSaving = false;
+      }
     }
+
+    async function syncWorkspaceFromServer(showToastFeedback = false) {
+      if (activeStorageMode !== 'workspace' || !currentUser || window.__tsdcAccessBlocked) return false;
+      if (isWorkspaceSaving || workspaceSyncInFlight) return false;
+      const shouldFetchServer = !window.isStaticHost() || Boolean(window.getBackendUrl());
+      if (!shouldFetchServer) {
+        if (showToastFeedback) window.showToast('Connect your Render backend URL or enable Google Cloud Sync to sync across devices.', true);
+        return false;
+      }
+
+      workspaceSyncInFlight = true;
+      try {
+        const authHeaders = await window.getAuthHeaders();
+        const res = await fetch(window.getApiUrl('/api/workspace'), { headers: authHeaders, cache: 'no-store' });
+        if (!res.ok) return false;
+        const serverData = await readJsonSafe(res);
+        if (!serverData || typeof serverData !== 'object') return false;
+
+        window.isBackendConnected = true;
+        updateStorageModeUI('workspace');
+
+        const local = readLocalWorkspace();
+        const localCount = (local?.lists?.length || 0) + (local?.contacts?.length || 0) + (local?.reports?.length || 0);
+        const serverHasTimestamp = Boolean(serverData.updatedAt);
+
+        if (!serverHasTimestamp) {
+          // Server disk was reset (e.g. Render restart) while local browser has data -> push local up cleanly
+          if (localCount > 0) {
+            await persistWorkspaceState();
+          }
+          if (showToastFeedback) window.showToast(`Synced ${contactsList.length} contacts.`);
+          return true;
+        }
+
+        const serverTs = new Date(serverData.updatedAt).getTime();
+        const knownTs = lastKnownServerUpdatedAt ? new Date(lastKnownServerUpdatedAt).getTime() : 0;
+        const localTs = local?.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+
+        if (serverTs > knownTs || (!knownTs && serverTs >= localTs)) {
+          lastKnownServerUpdatedAt = serverData.updatedAt;
+          const prevSelected = new Set(selectedContactIds);
+          workspaceProfile = serverData.profile || workspaceProfile;
+          userLists = Array.isArray(serverData.lists) ? serverData.lists : [];
+          contactsList = Array.isArray(serverData.contacts) ? serverData.contacts : [];
+          campaignsList = Array.isArray(serverData.campaigns) ? serverData.campaigns : [];
+          reportsList = Array.isArray(serverData.reports) ? serverData.reports : [];
+
+          selectedContactIds.clear();
+          contactsList.forEach(c => {
+            if (prevSelected.size === 0 || prevSelected.has(c.id)) {
+              selectedContactIds.add(c.id);
+            }
+          });
+          if (selectedContactIds.size === 0 && contactsList.length > 0 && prevSelected.size === 0) {
+            contactsList.forEach(c => selectedContactIds.add(c.id));
+          }
+
+          writeLocalWorkspace({
+            profile: workspaceProfile,
+            lists: userLists,
+            contacts: contactsList,
+            campaigns: campaignsList,
+            reports: reportsList,
+            updatedAt: serverData.updatedAt
+          });
+          renderAllWorkspaceViews();
+          if (currentUser) await loadUserProfile(currentUser);
+        }
+
+        if (showToastFeedback) {
+          window.showToast(`Contacts synced (${contactsList.length} total).`);
+        }
+        return true;
+      } catch (_) {
+        return false;
+      } finally {
+        workspaceSyncInFlight = false;
+      }
+    }
+
+    async function syncBackendUrlToFirestore(cleanUrl) {
+      const fbUid = getFirestoreUid();
+      if (!canUseFirestore(fbUid)) return;
+      try {
+        const userRef = doc(db, 'users', fbUid);
+        const snap = await getDoc(userRef);
+        const nowIso = new Date().toISOString();
+        if (snap.exists()) {
+          await updateDoc(userRef, {
+            backendUrl: String(cleanUrl || '').slice(0, 500),
+            updatedAt: nowIso
+          });
+        } else {
+          const email = (auth.currentUser && auth.currentUser.email) || (currentUser && currentUser.email) || '';
+          const name = (workspaceProfile && workspaceProfile.name) || (auth.currentUser && auth.currentUser.displayName) || (email ? email.split('@')[0] : 'TSDC User');
+          userDocCreatedAt = nowIso;
+          await setDoc(userRef, {
+            id: fbUid,
+            name: String(name).slice(0, 120),
+            email: String(email).slice(0, 254),
+            company: String(workspaceProfile?.company || '').slice(0, 160),
+            backendUrl: String(cleanUrl || '').slice(0, 500),
+            createdAt: nowIso,
+            updatedAt: nowIso
+          });
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${fbUid}`);
+      }
+    }
+
+    async function migrateWorkspaceToFirestore(fbUid) {
+      if (!canUseFirestore(fbUid)) return;
+      try {
+        const local = readLocalWorkspace();
+        const listsToMigrate = Array.isArray(local?.lists) ? local.lists : userLists;
+        const contactsToMigrate = Array.isArray(local?.contacts) ? local.contacts : contactsList;
+        const backendUrl = window.getBackendUrl();
+
+        if (backendUrl) {
+          await syncBackendUrlToFirestore(backendUrl);
+        }
+
+        if (listsToMigrate.length > 0) {
+          const existingListsSnap = await getDocs(query(collection(db, 'users', fbUid, 'lists'), where('ownerId', '==', fbUid)));
+          const existingListIds = new Set();
+          existingListsSnap.forEach(d => existingListIds.add(d.id));
+          for (const l of listsToMigrate) {
+            if (!l || !isValidFirestoreId(l.id) || existingListIds.has(l.id)) continue;
+            await setDoc(doc(db, 'users', fbUid, 'lists', l.id), {
+              id: l.id,
+              ownerId: fbUid,
+              name: String(l.name || 'List').slice(0, 120),
+              color: ['emerald', 'blue', 'purple', 'amber', 'rose', 'slate'].includes(l.color) ? l.color : 'emerald',
+              description: String(l.description || '').slice(0, 300),
+              createdAt: String(l.createdAt || new Date().toISOString()).slice(0, 64)
+            });
+          }
+        }
+
+        if (contactsToMigrate.length > 0) {
+          const existingContactsSnap = await getDocs(query(collection(db, 'users', fbUid, 'contacts'), where('ownerId', '==', fbUid)));
+          const existingPhones = new Set();
+          const existingIds = new Set();
+          existingContactsSnap.forEach(d => {
+            existingIds.add(d.id);
+            const p = d.data()?.phone;
+            if (p) existingPhones.add(p);
+          });
+          for (const c of contactsToMigrate) {
+            const cleanPhone = String(c?.phone || '').replace(/\D/g, '').slice(0, 20);
+            if (!c || !isValidFirestoreId(c.id) || cleanPhone.length < 8) continue;
+            if (existingIds.has(c.id) || existingPhones.has(cleanPhone)) continue;
+            const listIds = Array.isArray(c.listIds) ? c.listIds.filter(x => isValidFirestoreId(x)).slice(0, 50) : [];
+            await setDoc(doc(db, 'users', fbUid, 'contacts', c.id), {
+              id: c.id,
+              ownerId: fbUid,
+              name: String(c.name || 'Contact').slice(0, 150) || 'Contact',
+              phone: cleanPhone,
+              optedIn: Boolean(c.optedIn),
+              listIds,
+              createdAt: String(c.createdAt || new Date().toISOString()).slice(0, 64)
+            });
+          }
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${fbUid}/migration`);
+      }
+    }
+
+    window.linkFirebaseGoogleSync = async function() {
+      if (!auth || !db) return window.showToast('Firebase SDK not ready yet.', true);
+      try {
+        window.showToast('Sign in with the same Google account on laptop & phone for realtime sync…');
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        const cred = await signInWithPopup(auth, provider);
+        if (cred && cred.user) {
+          const fbUid = cred.user.uid;
+          await migrateWorkspaceToFirestore(fbUid);
+          activeStorageMode = 'firestore';
+          updateStorageModeUI('firestore');
+          await loadUserProfile(cred.user);
+          setupFirestoreListeners(fbUid);
+          window.showToast('Google Cloud Sync active! Contacts now sync automatically across devices.');
+        }
+      } catch (err) {
+        if (err && err.code === 'auth/popup-closed-by-user') return;
+        window.showToast(err?.message || 'Could not enable Google Cloud Sync.', true);
+      }
+    };
+
+    window.syncNow = async function() {
+      if (canUseFirestore(getFirestoreUid())) {
+        const fbUid = getFirestoreUid();
+        try {
+          const snap = await getDocs(query(collection(db, 'users', fbUid, 'contacts'), where('ownerId', '==', fbUid)));
+          contactsList = [];
+          snap.forEach(d => contactsList.push({ id: d.id, ...d.data() }));
+          renderAllWorkspaceViews();
+          window.showToast(`Cloud contacts refreshed (${contactsList.length}).`);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.LIST, `users/${fbUid}/contacts`);
+          window.showToast('Cloud sync failed. Check permissions.', true);
+        }
+        return;
+      }
+      await syncWorkspaceFromServer(true);
+    };
 
     async function startWorkspaceMode() {
       stopFirestoreListeners();
@@ -2876,42 +3402,7 @@
         renderAllWorkspaceViews();
       }
 
-      const shouldFetchServer = !window.isStaticHost() || Boolean(window.getBackendUrl());
-      if (shouldFetchServer && currentUser && !window.__tsdcAccessBlocked) {
-        try {
-          const authHeaders = await window.getAuthHeaders();
-          const res = await fetch(window.getApiUrl('/api/workspace'), { headers: authHeaders });
-          if (res.ok) {
-            const serverData = await res.json();
-            const serverCount = (serverData.lists?.length || 0) + (serverData.contacts?.length || 0) + (serverData.reports?.length || 0);
-            const localCount = (local?.lists?.length || 0) + (local?.contacts?.length || 0) + (local?.reports?.length || 0);
-            const serverNewer = serverData.updatedAt && (!local?.updatedAt || new Date(serverData.updatedAt) > new Date(local.updatedAt));
-
-            if (serverCount > 0 && (localCount === 0 || serverNewer)) {
-              workspaceProfile = serverData.profile || workspaceProfile;
-              userLists = Array.isArray(serverData.lists) ? serverData.lists : [];
-              contactsList = Array.isArray(serverData.contacts) ? serverData.contacts : [];
-              campaignsList = Array.isArray(serverData.campaigns) ? serverData.campaigns : [];
-              reportsList = Array.isArray(serverData.reports) ? serverData.reports : [];
-              selectedContactIds.clear();
-              contactsList.forEach(c => selectedContactIds.add(c.id));
-              writeLocalWorkspace({
-                profile: workspaceProfile,
-                lists: userLists,
-                contacts: contactsList,
-                campaigns: campaignsList,
-                reports: reportsList,
-                updatedAt: serverData.updatedAt || new Date().toISOString()
-              });
-              renderAllWorkspaceViews();
-            } else if (localCount > 0 && serverCount === 0) {
-              await persistWorkspaceState();
-            }
-            window.isBackendConnected = true;
-            updateStorageModeUI('workspace');
-          }
-        } catch (_) {}
-      }
+      await syncWorkspaceFromServer(false);
 
       if (currentUser) {
         await loadUserProfile(currentUser);
@@ -2926,7 +3417,7 @@
 
     async function attemptFirebaseCustomTokenBridge(tsdcUser) {
       if (!auth || !tsdcUser) return false;
-      if (auth.currentUser && (!auth.currentUser.email || !tsdcUser.email || auth.currentUser.email.toLowerCase() === tsdcUser.email.toLowerCase())) {
+      if (auth.currentUser) {
         return true;
       }
       const canTryBackend = !window.isStaticHost() || Boolean(window.getBackendUrl());
@@ -2938,13 +3429,24 @@
           headers: authHeaders
         });
         if (!res.ok) return false;
-        const data = await res.json().catch(() => null);
+        const data = await readJsonSafe(res);
         if (data && data.ok && data.customToken) {
           await signInWithCustomToken(auth, data.customToken);
           return Boolean(auth.currentUser);
         }
       } catch (_) {}
       return false;
+    }
+
+    async function testFirestoreConnection() {
+      if (!db) return;
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('the client is offline')) {
+          console.error('Please check your Firebase configuration.');
+        }
+      }
     }
 
     // Initialize Firebase SDK & Workspace Auth
@@ -2970,11 +3472,30 @@
         const app = initializeApp(config);
         auth = getAuth(app);
         db = config.firestoreDatabaseId ? getFirestore(app, config.firestoreDatabaseId) : getFirestore(app);
+        testFirestoreConnection();
 
         currentUser = tsdcUser;
-        const hasFirebaseSession = await attemptFirebaseCustomTokenBridge(tsdcUser);
+
+        // Wait briefly for persisted Firebase Auth session (e.g. Google Cloud Sync from previous visit)
+        await new Promise(resolve => {
+          let settled = false;
+          const timer = setTimeout(() => { if (!settled) { settled = true; resolve(); } }, 900);
+          const unsub = onAuthStateChanged(auth, () => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              unsub();
+              resolve();
+            }
+          });
+        });
+
+        let hasFirebaseSession = Boolean(auth.currentUser);
+        if (!hasFirebaseSession) {
+          hasFirebaseSession = await attemptFirebaseCustomTokenBridge(tsdcUser);
+        }
+
         if (hasFirebaseSession && auth.currentUser) {
-          currentUser = auth.currentUser;
           activeStorageMode = 'firestore';
           updateStorageModeUI('firestore');
           await loadUserProfile(auth.currentUser);
@@ -2999,8 +3520,10 @@
     // Load & Save User Profile
     async function loadUserProfile(user) {
       try {
-        let name = workspaceProfile.name || user.displayName || (user.email ? user.email.split('@')[0] : 'TSDC User');
+        const displayIdentity = currentUser || user;
+        let name = workspaceProfile.name || user.displayName || (displayIdentity.email ? displayIdentity.email.split('@')[0] : 'TSDC User');
         let company = workspaceProfile.company || '';
+        const email = (displayIdentity && displayIdentity.email) || user.email || '';
 
         if (canUseFirestore(user.uid)) {
           try {
@@ -3008,16 +3531,28 @@
             const snap = await getDoc(userRef);
             if (snap.exists()) {
               const data = snap.data();
+              if (data.createdAt) userDocCreatedAt = data.createdAt;
               if (data.name) name = data.name;
-              if (data.company) company = data.company;
+              if (data.company !== undefined) company = data.company;
+              if (data.backendUrl && !window.getBackendUrl()) {
+                localStorage.setItem('desk_backend_url', String(data.backendUrl).trim().replace(/\/+$/, ''));
+                window.updateBackendStatusBadge(true);
+                window.fetchStatus();
+              } else if (!data.backendUrl && window.getBackendUrl()) {
+                syncBackendUrlToFirestore(window.getBackendUrl());
+              }
             } else {
+              const nowIso = new Date().toISOString();
+              userDocCreatedAt = nowIso;
               await setDoc(userRef, {
                 id: user.uid,
-                name,
-                email: user.email || '',
+                name: String(name || 'TSDC User').slice(0, 120),
+                email: String(email).slice(0, 254),
                 company: '',
-                createdAt: new Date().toISOString()
-              }).catch(() => {});
+                backendUrl: String(window.getBackendUrl() || '').slice(0, 500),
+                createdAt: nowIso,
+                updatedAt: nowIso
+              });
             }
           } catch (e) {
             handleFirestoreError(e, OperationType.GET, `users/${user.uid}`);
@@ -3038,8 +3573,8 @@
           sideNameEl.title = name;
         }
         if (sideEmailEl) {
-          sideEmailEl.textContent = user.email || '';
-          sideEmailEl.title = user.email || '';
+          sideEmailEl.textContent = email;
+          sideEmailEl.title = email;
         }
         const sideAvatarEl = document.getElementById('sideAvatar');
         if (sideAvatarEl) sideAvatarEl.textContent = (name || 'US').slice(0, 2).toUpperCase();
@@ -3055,10 +3590,10 @@
         const pUid = document.getElementById('profileUid');
         const pBadge = document.getElementById('profileEmailBadge');
         if (pName) pName.value = name;
-        if (pEmail) pEmail.value = user.email || '';
+        if (pEmail) pEmail.value = email;
         if (pComp) pComp.value = company;
         if (pUid) pUid.value = user.uid || '';
-        if (pBadge) pBadge.textContent = user.email || 'your email';
+        if (pBadge) pBadge.textContent = email || 'your email';
       } catch (e) {
         console.error('Error loading profile:', e);
       }
@@ -3067,28 +3602,47 @@
     window.saveUserProfile = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('profileName').value.trim();
-      const company = document.getElementById('profileCompany').value.trim();
+      const name = document.getElementById('profileName').value.trim().slice(0, 120);
+      const company = document.getElementById('profileCompany').value.trim().slice(0, 160);
       try {
-        if (canUseFirestore(currentUser.uid)) {
-          await setDoc(doc(db, 'users', currentUser.uid), {
-            id: currentUser.uid,
-            name,
-            email: currentUser.email || '',
-            company,
-            createdAt: new Date().toISOString()
-          }, { merge: true });
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
+          const userRef = doc(db, 'users', fbUid);
+          const snap = await getDoc(userRef);
+          const nowIso = new Date().toISOString();
+          if (snap.exists()) {
+            await updateDoc(userRef, {
+              name,
+              email: String(auth.currentUser.email || currentUser.email || '').slice(0, 254),
+              company,
+              backendUrl: String(window.getBackendUrl() || '').slice(0, 500),
+              updatedAt: nowIso
+            });
+          } else {
+            userDocCreatedAt = nowIso;
+            await setDoc(userRef, {
+              id: fbUid,
+              name,
+              email: String(auth.currentUser.email || currentUser.email || '').slice(0, 254),
+              company,
+              backendUrl: String(window.getBackendUrl() || '').slice(0, 500),
+              createdAt: nowIso,
+              updatedAt: nowIso
+            });
+          }
           if (auth.currentUser) {
             await updateProfile(auth.currentUser, { displayName: name });
           }
+          await loadUserProfile(auth.currentUser);
         } else {
           workspaceProfile = { name, company };
           currentUser.displayName = name;
           await persistWorkspaceState();
+          await loadUserProfile(currentUser);
         }
-        await loadUserProfile(currentUser);
         window.showToast('Profile updated successfully.');
       } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${getFirestoreUid() || currentUser.uid}`);
         window.showToast(err.message, true);
       }
     };
@@ -3111,6 +3665,9 @@
         localStorage.removeItem('tsdc_token');
         localStorage.removeItem('tsdc_email');
         localStorage.removeItem('tsdc_uid');
+        localStorage.removeItem('tsdc_sso_token');
+        localStorage.removeItem('tsdc_sso_email');
+        localStorage.removeItem('tsdc_sso_uid');
         if (auth) {
           try { await signOut(auth); } catch (_) {}
         }
@@ -3132,7 +3689,7 @@
       activeStorageMode = 'firestore';
       updateStorageModeUI('firestore');
 
-      const listsCol = collection(db, 'users', uid, 'lists');
+      const listsCol = query(collection(db, 'users', uid, 'lists'), where('ownerId', '==', uid));
       unsubscribeLists = onSnapshot(listsCol, snap => {
         userLists = [];
         snap.forEach(d => userLists.push({ id: d.id, ...d.data() }));
@@ -3142,19 +3699,22 @@
         renderContactsTable();
         updatePreview();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/lists`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/lists`);
       });
 
-      const contactsCol = collection(db, 'users', uid, 'contacts');
+      const contactsCol = query(collection(db, 'users', uid, 'contacts'), where('ownerId', '==', uid));
       unsubscribeContacts = onSnapshot(contactsCol, snap => {
+        const prevSelected = new Set(selectedContactIds);
         contactsList = [];
         snap.forEach(d => contactsList.push({ id: d.id, ...d.data() }));
-        if (selectedContactIds.size === 0 && contactsList.length > 0) {
+        if (prevSelected.size === 0 && contactsList.length > 0) {
           contactsList.forEach(c => selectedContactIds.add(c.id));
+        } else {
+          selectedContactIds.clear();
+          contactsList.forEach(c => { if (prevSelected.has(c.id)) selectedContactIds.add(c.id); });
         }
         renderListPills();
         populateListDropdowns();
@@ -3162,14 +3722,13 @@
         updateMetrics();
         updatePreview();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/contacts`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/contacts`);
       });
 
-      const reportsCol = collection(db, 'users', uid, 'reports');
+      const reportsCol = query(collection(db, 'users', uid, 'reports'), where('ownerId', '==', uid));
       unsubscribeReports = onSnapshot(reportsCol, snap => {
         reportsList = [];
         snap.forEach(d => reportsList.push({ id: d.id, ...d.data() }));
@@ -3177,11 +3736,10 @@
         renderReportsTable();
         updateMetrics();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/reports`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/reports`);
       });
     }
 
@@ -3336,19 +3894,22 @@
       document.getElementById('newListName').value = '';
       document.getElementById('newListColor').value = 'emerald';
       document.getElementById('newListDesc').value = '';
-      document.getElementById('createListModal').classList.remove('hidden');
+      if (window.__uiOpenModal) window.__uiOpenModal('createListModal');
+      else document.getElementById('createListModal').classList.remove('hidden');
     };
 
     window.closeCreateListModal = function() {
-      document.getElementById('createListModal').classList.add('hidden');
+      if (window.__uiCloseModal) window.__uiCloseModal('createListModal');
+      else document.getElementById('createListModal').classList.add('hidden');
     };
 
     window.handleCreateList = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('newListName').value.trim();
-      const color = document.getElementById('newListColor').value;
-      const description = document.getElementById('newListDesc').value.trim();
+      const name = document.getElementById('newListName').value.trim().slice(0, 120);
+      const rawColor = document.getElementById('newListColor').value;
+      const color = ['emerald', 'blue', 'purple', 'amber', 'rose', 'slate'].includes(rawColor) ? rawColor : 'emerald';
+      const description = document.getElementById('newListDesc').value.trim().slice(0, 300);
       if (!name) return window.showToast('Please enter a list name.', true);
 
       const id = `l_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -3361,8 +3922,9 @@
         createdAt: new Date().toISOString()
       };
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await setDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), listObj);
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
+          await setDoc(doc(db, 'users', fbUid, 'lists', id), { ...listObj, ownerId: fbUid });
         } else {
           userLists.push(listObj);
           userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -3372,6 +3934,9 @@
         window.showToast(`List "${name}" created.`);
         window.filterByList(id);
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.WRITE, `users/${getFirestoreUid()}/lists/${id}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3384,29 +3949,33 @@
       document.getElementById('editListName').value = list.name;
       document.getElementById('editListColor').value = list.color || 'emerald';
       document.getElementById('editListDesc').value = list.description || '';
-      document.getElementById('editListModal').classList.remove('hidden');
+      if (window.__uiOpenModal) window.__uiOpenModal('editListModal');
+      else document.getElementById('editListModal').classList.remove('hidden');
     };
 
     window.closeEditListModal = function() {
-      document.getElementById('editListModal').classList.add('hidden');
+      if (window.__uiCloseModal) window.__uiCloseModal('editListModal');
+      else document.getElementById('editListModal').classList.add('hidden');
     };
 
     window.handleUpdateList = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
       const id = document.getElementById('editListId').value;
-      const name = document.getElementById('editListName').value.trim();
-      const color = document.getElementById('editListColor').value;
-      const description = document.getElementById('editListDesc').value.trim();
+      const name = document.getElementById('editListName').value.trim().slice(0, 120);
+      const rawColor = document.getElementById('editListColor').value;
+      const color = ['emerald', 'blue', 'purple', 'amber', 'rose', 'slate'].includes(rawColor) ? rawColor : 'emerald';
+      const description = document.getElementById('editListDesc').value.trim().slice(0, 300);
       if (!id || !name) return;
 
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await updateDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), {
-            ownerId: getFirestoreUid(),
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
+          await updateDoc(doc(db, 'users', fbUid, 'lists', id), {
             name,
             color,
-            description
+            description,
+            updatedAt: new Date().toISOString()
           });
         } else {
           const target = userLists.find(l => l.id === id);
@@ -3414,6 +3983,7 @@
             target.name = name;
             target.color = color;
             target.description = description;
+            target.updatedAt = new Date().toISOString();
           }
           userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           renderAllWorkspaceViews();
@@ -3422,6 +3992,9 @@
         window.closeEditListModal();
         window.showToast(`List "${name}" updated.`);
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.UPDATE, `users/${getFirestoreUid()}/lists/${id}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3434,13 +4007,14 @@
 
       try {
         const listId = list.id;
-        if (canUseFirestore(getFirestoreUid())) {
-          const fbUid = getFirestoreUid();
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
           await deleteDoc(doc(db, 'users', fbUid, 'lists', listId));
+          const nowIso = new Date().toISOString();
           for (const c of contactsList) {
             if (Array.isArray(c.listIds) && c.listIds.includes(listId)) {
-              const updated = c.listIds.filter(id => id !== listId);
-              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: updated }).catch(() => {});
+              const updated = c.listIds.filter(id => id !== listId && isValidFirestoreId(id)).slice(0, 50);
+              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { listIds: updated, updatedAt: nowIso }).catch(() => {});
             }
           }
         } else {
@@ -3459,6 +4033,9 @@
         renderAllWorkspaceViews();
         window.showToast(`List "${list.name}" deleted.`);
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${getFirestoreUid()}/lists/${list.id}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3472,47 +4049,61 @@
       }
 
       const selected = contactsList.filter(c => selectedContactIds.has(c.id));
-      const useFs = canUseFirestore(getFirestoreUid());
       const fbUid = getFirestoreUid();
+      const useFs = canUseFirestore(fbUid);
+      const nowIso = new Date().toISOString();
 
-      if (listId === '__remove_current__') {
-        if (activeContactListFilter === 'all') {
-          document.getElementById('bulkAssignListSelect').value = '';
-          return window.showToast('Select a specific list tab first to remove contacts from it.', true);
-        }
-        const listToRemove = activeContactListFilter;
-        for (const c of selected) {
-          const current = Array.isArray(c.listIds) ? c.listIds : [];
-          const updated = current.filter(id => id !== listToRemove);
-          c.listIds = updated;
-          if (useFs) {
-            await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: updated });
+      try {
+        if (listId === '__remove_current__') {
+          if (activeContactListFilter === 'all') {
+            document.getElementById('bulkAssignListSelect').value = '';
+            return window.showToast('Select a specific list tab first to remove contacts from it.', true);
           }
-        }
-        if (!useFs) {
-          renderAllWorkspaceViews();
-          await persistWorkspaceState();
-        }
-        window.showToast(`Removed ${selected.length} contact(s) from list.`);
-      } else {
-        const targetList = userLists.find(l => l.id === listId);
-        for (const c of selected) {
-          const current = Array.isArray(c.listIds) ? [...c.listIds] : [];
-          if (!current.includes(listId)) {
-            current.push(listId);
-            c.listIds = current;
+          const listToRemove = activeContactListFilter;
+          for (const c of selected) {
+            const current = Array.isArray(c.listIds) ? c.listIds : [];
+            const updated = current.filter(id => id !== listToRemove && isValidFirestoreId(id)).slice(0, 50);
+            c.listIds = updated;
             if (useFs) {
-              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { ownerId: fbUid, listIds: current });
+              await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { listIds: updated, updatedAt: nowIso });
             }
           }
+          if (!useFs) {
+            renderAllWorkspaceViews();
+            await persistWorkspaceState();
+          }
+          window.showToast(`Removed ${selected.length} contact(s) from list.`);
+        } else {
+          if (!isValidFirestoreId(listId)) {
+            document.getElementById('bulkAssignListSelect').value = '';
+            return;
+          }
+          const targetList = userLists.find(l => l.id === listId);
+          for (const c of selected) {
+            const current = (Array.isArray(c.listIds) ? [...c.listIds] : []).filter(id => isValidFirestoreId(id));
+            if (!current.includes(listId)) {
+              current.push(listId);
+              const bounded = current.slice(0, 50);
+              c.listIds = bounded;
+              if (useFs) {
+                await updateDoc(doc(db, 'users', fbUid, 'contacts', c.id), { listIds: bounded, updatedAt: nowIso });
+              }
+            }
+          }
+          if (!useFs) {
+            renderAllWorkspaceViews();
+            await persistWorkspaceState();
+          }
+          window.showToast(`Added ${selected.length} contact(s) to "${targetList?.name || 'List'}".`);
         }
-        if (!useFs) {
-          renderAllWorkspaceViews();
-          await persistWorkspaceState();
+      } catch (err) {
+        if (useFs) {
+          handleFirestoreError(err, OperationType.UPDATE, `users/${fbUid}/contacts`);
         }
-        window.showToast(`Added ${selected.length} contact(s) to "${targetList?.name || 'List'}".`);
+        window.showToast(err.message || 'Failed to update contact lists.', true);
+      } finally {
+        document.getElementById('bulkAssignListSelect').value = '';
       }
-      document.getElementById('bulkAssignListSelect').value = '';
     };
 
     // Single Contact Lists Modal
@@ -3541,11 +4132,13 @@
           </label>
         `).join('');
       }
-      document.getElementById('contactListsModal').classList.remove('hidden');
+      if (window.__uiOpenModal) window.__uiOpenModal('contactListsModal');
+      else document.getElementById('contactListsModal').classList.remove('hidden');
     };
 
     window.closeContactListsModal = function() {
-      document.getElementById('contactListsModal').classList.add('hidden');
+      if (window.__uiCloseModal) window.__uiCloseModal('contactListsModal');
+      else document.getElementById('contactListsModal').classList.add('hidden');
     };
 
     window.saveContactListsAssignment = async function() {
@@ -3554,24 +4147,34 @@
       if (!contactId) return;
 
       const chks = document.querySelectorAll('#contactListsCheckboxes .contact-list-chk');
-      const checkedListIds = Array.from(chks).filter(c => c.checked).map(c => c.value);
+      const checkedListIds = Array.from(chks)
+        .filter(c => c.checked)
+        .map(c => c.value)
+        .filter(id => isValidFirestoreId(id))
+        .slice(0, 50);
 
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          const fbUid = getFirestoreUid();
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
           await updateDoc(doc(db, 'users', fbUid, 'contacts', contactId), {
-            ownerId: fbUid,
-            listIds: checkedListIds
+            listIds: checkedListIds,
+            updatedAt: new Date().toISOString()
           });
         } else {
           const target = contactsList.find(c => c.id === contactId);
-          if (target) target.listIds = checkedListIds;
+          if (target) {
+            target.listIds = checkedListIds;
+            target.updatedAt = new Date().toISOString();
+          }
           renderAllWorkspaceViews();
           await persistWorkspaceState();
         }
         window.closeContactListsModal();
         window.showToast('Contact lists updated.');
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.UPDATE, `users/${getFirestoreUid()}/contacts/${contactId}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3716,8 +4319,9 @@
     window.deleteSingleContact = async function(id) {
       if (!currentUser) return;
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await deleteDoc(doc(db, 'users', getFirestoreUid(), 'contacts', id));
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
+          await deleteDoc(doc(db, 'users', fbUid, 'contacts', id));
         } else {
           contactsList = contactsList.filter(c => c.id !== id);
           selectedContactIds.delete(id);
@@ -3727,6 +4331,9 @@
         selectedContactIds.delete(id);
         window.showToast('Contact deleted.');
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${getFirestoreUid()}/contacts/${id}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3736,8 +4343,8 @@
       const toDelete = Array.from(selectedContactIds);
       const deleteSet = new Set(toDelete);
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          const fbUid = getFirestoreUid();
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
           for (const id of toDelete) {
             await deleteDoc(doc(db, 'users', fbUid, 'contacts', id));
             selectedContactIds.delete(id);
@@ -3750,6 +4357,9 @@
         }
         window.showToast(`Deleted ${toDelete.length} contacts.`);
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${getFirestoreUid()}/contacts`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3758,9 +4368,10 @@
     window.handleAddContact = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('newContactName').value.trim();
-      const phone = document.getElementById('newContactPhone').value.replace(/\D/g, '');
-      const optedIn = document.getElementById('newContactConsent').checked;
+      const rawName = document.getElementById('newContactName').value.trim();
+      const name = (rawName || 'Contact').slice(0, 150);
+      const phone = document.getElementById('newContactPhone').value.replace(/\D/g, '').slice(0, 20);
+      const optedIn = Boolean(document.getElementById('newContactConsent').checked);
       const listSelectVal = document.getElementById('newContactListSelect')?.value || '';
 
       if (!phone || phone.length < 8 || phone.length > 15) {
@@ -3769,25 +4380,27 @@
 
       const id = `c_${Date.now()}_${phone}`;
       const contactListIds = [];
-      if (listSelectVal) {
+      if (listSelectVal && isValidFirestoreId(listSelectVal)) {
         contactListIds.push(listSelectVal);
-      } else if (activeContactListFilter !== 'all') {
+      } else if (activeContactListFilter !== 'all' && isValidFirestoreId(activeContactListFilter)) {
         contactListIds.push(activeContactListFilter);
       }
 
+      const fbUid = getFirestoreUid();
+      const useFs = canUseFirestore(fbUid);
       const contactObj = {
         id,
-        ownerId: getWorkspaceOwnerId(),
+        ownerId: useFs ? fbUid : getWorkspaceOwnerId(),
         name,
         phone,
         optedIn,
-        listIds: contactListIds,
+        listIds: contactListIds.slice(0, 50),
         createdAt: new Date().toISOString()
       };
 
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await setDoc(doc(db, 'users', getFirestoreUid(), 'contacts', id), contactObj);
+        if (useFs) {
+          await setDoc(doc(db, 'users', fbUid, 'contacts', id), contactObj);
         } else {
           contactsList.push(contactObj);
           selectedContactIds.add(id);
@@ -3798,6 +4411,9 @@
         closeAddContactModal();
         window.showToast(`Contact ${name} saved.`);
       } catch (err) {
+        if (useFs) {
+          handleFirestoreError(err, OperationType.WRITE, `users/${fbUid}/contacts/${id}`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -3824,16 +4440,18 @@
               body: formData
             });
             if (res.status === 403) {
-              const errData = await res.json().catch(() => ({}));
+              const errData = (await readJsonSafe(res)) || {};
               if (window.isSubscriptionDenial(res.status, errData)) {
                 const blocked = await window.handleBackendSubscriptionDenial(errData);
                 if (blocked) return;
               }
             }
             if (res.ok) {
-              const data = await res.json();
-              contacts = data.contacts || [];
-              count = data.count || contacts.length;
+              const data = await readJsonSafe(res);
+              if (data && Array.isArray(data.contacts)) {
+                contacts = data.contacts;
+                count = data.count || contacts.length;
+              }
             }
           } catch (_) {}
         }
@@ -3869,7 +4487,7 @@
                 keys[String(k).trim().toLowerCase().replace(/[\s_-]+/g, '')] = v;
               }
               const name = keys.name || keys.fullname || keys.contactname || keys.customer || `Contact ${i + 1}`;
-              const phone = String(keys.phone || keys.phonenumber || keys.mobile || keys.whatsapp || keys.number || '').replace(/\D/g, '');
+              const phone = String(keys.phone || keys.phonenumber || keys.mobile || keys.whatsapp || keys.number || '').replace(/\D/g, '').slice(0, 20);
               const consent = String(keys.optedin ?? keys.consent ?? keys.whatsappconsent ?? keys.permission ?? '').trim().toLowerCase();
               const optedIn = ['yes', 'y', 'true', '1', 'opted-in', 'optedin', 'consented'].includes(consent);
               if (phone && phone.length >= 8 && !seen.has(phone)) {
@@ -3877,7 +4495,7 @@
                 contacts.push({
                   id: `c_${Date.now()}_${i}_${phone}`,
                   ownerId: getWorkspaceOwnerId(),
-                  name: String(name || 'Contact').slice(0, 150).trim(),
+                  name: (String(name || 'Contact').trim().slice(0, 150) || 'Contact'),
                   phone,
                   optedIn,
                   createdAt: new Date().toISOString()
@@ -3891,38 +4509,53 @@
         if (!contacts.length) throw new Error('Could not parse any valid contacts with phone numbers from this CSV.');
 
         window.showToast(`Importing ${count} contacts…`);
-        const useFs = canUseFirestore(getFirestoreUid());
         const fbUid = getFirestoreUid();
-        const ownerId = getWorkspaceOwnerId();
+        const useFs = canUseFirestore(fbUid);
+        const ownerId = useFs ? fbUid : getWorkspaceOwnerId();
 
+        let importedCount = 0;
         for (const c of contacts) {
-          c.ownerId = ownerId;
-          if (activeContactListFilter !== 'all') {
-            c.listIds = [activeContactListFilter];
-          } else {
-            c.listIds = c.listIds || [];
-          }
+          const cleanNum = String(c.phone || '').replace(/\D/g, '').slice(0, 20);
+          if (cleanNum.length < 8) continue;
+          const cleanName = String(c.name || 'Contact').trim().slice(0, 150) || 'Contact';
+          const listIds = (activeContactListFilter !== 'all' && isValidFirestoreId(activeContactListFilter))
+            ? [activeContactListFilter]
+            : (Array.isArray(c.listIds) ? c.listIds.filter(id => isValidFirestoreId(id)).slice(0, 50) : []);
+          const safeId = isValidFirestoreId(c.id) ? c.id : `c_${Date.now()}_${importedCount}_${cleanNum}`;
+          const contactDoc = {
+            id: safeId,
+            ownerId,
+            name: cleanName,
+            phone: cleanNum,
+            optedIn: Boolean(c.optedIn),
+            listIds,
+            createdAt: String(c.createdAt || new Date().toISOString()).slice(0, 64)
+          };
           if (useFs) {
-            await setDoc(doc(db, 'users', fbUid, 'contacts', c.id), c);
+            await setDoc(doc(db, 'users', fbUid, 'contacts', safeId), contactDoc);
           } else {
-            const existingIdx = contactsList.findIndex(x => x.phone === c.phone);
+            const existingIdx = contactsList.findIndex(x => x.phone === cleanNum);
             if (existingIdx !== -1) {
-              contactsList[existingIdx] = { ...contactsList[existingIdx], ...c, id: contactsList[existingIdx].id };
+              contactsList[existingIdx] = { ...contactsList[existingIdx], ...contactDoc, id: contactsList[existingIdx].id };
               selectedContactIds.add(contactsList[existingIdx].id);
             } else {
-              contactsList.push(c);
-              selectedContactIds.add(c.id);
+              contactsList.push(contactDoc);
+              selectedContactIds.add(safeId);
             }
           }
-          selectedContactIds.add(c.id);
+          selectedContactIds.add(safeId);
+          importedCount++;
         }
 
         if (!useFs) {
           renderAllWorkspaceViews();
           await persistWorkspaceState();
         }
-        window.showToast(`Imported ${count} contacts successfully!`);
+        window.showToast(`Imported ${importedCount} contacts successfully!`);
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.WRITE, `users/${getFirestoreUid()}/contacts`);
+        }
         window.showToast(err.message, true);
       } finally {
         e.target.value = '';
@@ -4198,11 +4831,13 @@
 
       document.getElementById('reviewConsentCheckbox').checked = false;
       document.getElementById('btnConfirmSend').disabled = true;
-      document.getElementById('reviewModal').classList.remove('hidden');
+      if (window.__uiOpenModal) window.__uiOpenModal('reviewModal');
+      else document.getElementById('reviewModal').classList.remove('hidden');
     };
 
     window.closeReviewModal = function() {
-      document.getElementById('reviewModal').classList.add('hidden');
+      if (window.__uiCloseModal) window.__uiCloseModal('reviewModal');
+      else document.getElementById('reviewModal').classList.add('hidden');
     };
 
     window.toggleSendButton = function(checked) {
@@ -4229,16 +4864,20 @@
           })
         });
 
-        let data = {};
-        try {
-          const text = await res.text();
-          if (text && text.trim().startsWith('{')) {
-            data = JSON.parse(text);
+        const data = await readJsonSafe(res);
+
+        if (res.ok && !data) {
+          if (!window.getBackendUrl()) {
+            window.__sameOriginIsStatic = true;
+            window.isBackendConnected = false;
+            window.updateBackendStatusBadge(false);
+            setTimeout(window.openBackendConfigModal, 600);
           }
-        } catch (_) {}
+          throw new Error('WhatsApp backend server is not reachable on this static host. Configure your Render backend URL first.');
+        }
 
         if (!res.ok) {
-          if (window.isSubscriptionDenial(res.status, data)) {
+          if (data && window.isSubscriptionDenial(res.status, data)) {
             await window.handleBackendSubscriptionDenial(data);
             throw new Error(data.message || `Access denied (${data.code || 'SUBSCRIPTION_INACTIVE'})`);
           }
@@ -4248,55 +4887,61 @@
             }
             throw new Error(`WhatsApp backend route (${window.getApiUrl('/api/send')}) is not reachable on this host. Run the Node.js backend server (server.js) to broadcast.`);
           }
-          throw new Error(data.error || data.message || `Server returned error (${res.status})`);
+          throw new Error((data && (data.error || data.message)) || `Server returned error (${res.status})`);
         }
 
-        const ownerId = getWorkspaceOwnerId();
+        const fbUid = getFirestoreUid();
+        const useFs = canUseFirestore(fbUid);
+        const ownerId = useFs ? fbUid : getWorkspaceOwnerId();
         const campId = `camp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const nowIso = new Date().toISOString();
         const campObj = {
           id: campId,
           ownerId,
-          title: pendingBatch.campaignName,
-          targetListName: pendingBatch.targetListName,
-          targetListId: pendingBatch.targetListId,
-          message: pendingBatch.message,
+          title: String(pendingBatch.campaignName || 'Untitled Broadcast').slice(0, 200),
+          targetListName: String(pendingBatch.targetListName || 'All Contacts').slice(0, 120),
+          targetListId: String(pendingBatch.targetListId || 'all').slice(0, 128),
+          message: String(pendingBatch.message || '').slice(0, 8000),
           hasMedia: Boolean(pendingBatch.media),
-          mediaName: pendingBatch.media?.filename || '',
-          mediaMime: pendingBatch.media?.mimetype || '',
-          recipientCount: pendingBatch.contacts.length,
-          createdAt: new Date().toISOString()
+          mediaName: String(pendingBatch.media?.filename || '').slice(0, 255),
+          mediaMime: String(pendingBatch.media?.mimetype || '').slice(0, 128),
+          recipientCount: Math.max(1, Math.min(500, pendingBatch.contacts.length)),
+          createdAt: nowIso
         };
-
-        const useFs = canUseFirestore(getFirestoreUid());
-        const fbUid = getFirestoreUid();
 
         if (useFs) {
           const campRef = doc(collection(db, 'users', fbUid, 'campaigns'));
           await setDoc(campRef, { ...campObj, id: campRef.id, ownerId: fbUid });
           for (const c of pendingBatch.contacts) {
             const reportRef = doc(collection(db, 'users', fbUid, 'reports'));
+            const cleanName = String(c.name || 'Contact').trim().slice(0, 150) || 'Contact';
+            const cleanPhone = String(c.phone || '').replace(/\D/g, '').slice(0, 20);
+            const detailText = (pendingBatch.media
+              ? `Queued message with media (${pendingBatch.media.filename || 'attachment'})`
+              : 'Queued for WhatsApp Web dispatch').slice(0, 500);
             await setDoc(reportRef, {
               id: reportRef.id,
               ownerId: fbUid,
-              name: c.name,
-              phone: c.phone,
+              name: cleanName,
+              phone: cleanPhone,
               status: 'Submitted',
-              detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
+              detail: detailText,
               hasMedia: Boolean(pendingBatch.media),
               at: new Date().toISOString()
             });
           }
         } else {
           campaignsList.unshift(campObj);
-          const nowIso = new Date().toISOString();
           for (const c of pendingBatch.contacts) {
             reportsList.unshift({
               id: `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
               ownerId,
-              name: c.name,
-              phone: c.phone,
+              name: String(c.name || 'Contact').trim().slice(0, 150) || 'Contact',
+              phone: String(c.phone || '').replace(/\D/g, '').slice(0, 20),
               status: 'Submitted',
-              detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
+              detail: (pendingBatch.media
+                ? `Queued message with media (${pendingBatch.media.filename || 'attachment'})`
+                : 'Queued for WhatsApp Web dispatch').slice(0, 500),
               hasMedia: Boolean(pendingBatch.media),
               at: nowIso
             });
@@ -4309,6 +4954,9 @@
         window.showToast('Broadcast batch launched! Monitoring reports…');
         switchTab('reports');
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.WRITE, `users/${getFirestoreUid()}/campaigns`);
+        }
         window.showToast(err.message, true);
       } finally {
         btn.disabled = false;
@@ -4356,8 +5004,8 @@
       if (!currentUser || reportsList.length === 0) return;
       if (!confirm('Clear all delivery report logs from this workspace?')) return;
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          const fbUid = getFirestoreUid();
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
           for (const r of reportsList) {
             await deleteDoc(doc(db, 'users', fbUid, 'reports', r.id));
           }
@@ -4368,6 +5016,9 @@
         }
         window.showToast('Reports cleared.');
       } catch (err) {
+        if (canUseFirestore(getFirestoreUid())) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${getFirestoreUid()}/reports`);
+        }
         window.showToast(err.message, true);
       }
     };
@@ -4394,26 +5045,38 @@
       try {
         const authHeaders = await window.getAuthHeaders();
         const res = await fetch(window.getApiUrl('/api/status'), {
-          headers: authHeaders
+          headers: authHeaders,
+          cache: 'no-store'
         });
-        if (res.status === 403) {
-          const errData = await res.json().catch(() => ({}));
-          if (window.isSubscriptionDenial(res.status, errData)) {
-            const blocked = await window.handleBackendSubscriptionDenial(errData);
+        const data = await readJsonSafe(res);
+        if (res.status === 403 && data) {
+          if (window.isSubscriptionDenial(res.status, data)) {
+            const blocked = await window.handleBackendSubscriptionDenial(data);
             if (blocked) return;
           }
         }
-        if (!res.ok) {
-          updateStatusUI({ status: 'disconnected', message: window.isStaticHost() && !window.getBackendUrl() ? 'Cloudflare Pages detected. Connect your Node.js backend (server.js) to pair WhatsApp.' : 'Ready in standalone Firebase mode.' });
+        if (res.ok && !data) {
+          if (!window.getBackendUrl()) {
+            window.__sameOriginIsStatic = true;
+            window.isBackendConnected = false;
+            window.updateBackendStatusBadge(false);
+          }
+          updateStatusUI({
+            status: 'disconnected',
+            message: 'Static host detected. Connect your Render backend URL in Settings (or open via Phone Quick-Connect link) to pair WhatsApp.'
+          });
           return;
         }
-        const text = await res.text();
-        if (text && text.trim().startsWith('{')) {
-          const data = JSON.parse(text);
-          updateStatusUI(data);
-        } else {
-          updateStatusUI({ status: 'disconnected', message: 'Ready in standalone Firebase mode.' });
+        if (!res.ok || !data) {
+          updateStatusUI({
+            status: 'disconnected',
+            message: window.isStaticHost() && !window.getBackendUrl()
+              ? 'Static host detected. Connect your Node.js backend (server.js) to pair WhatsApp.'
+              : 'Ready in standalone mode.'
+          });
+          return;
         }
+        updateStatusUI(data);
       } catch (e) {
         updateStatusUI({ status: 'disconnected', message: 'Backend unreachable. Click "Configure Backend" to verify URL.' });
       }
@@ -4479,7 +5142,7 @@
         window.showToast('Initiating WhatsApp pairing…');
         const authHeaders = await window.getAuthHeaders();
         const targetUrl = window.getApiUrl('/api/whatsapp/connect');
-        
+
         let res;
         try {
           res = await fetch(targetUrl, {
@@ -4493,9 +5156,18 @@
           throw new Error(`Cannot reach WhatsApp backend at ${targetUrl}. Cloudflare Pages cannot run Node.js. Please enter your Render backend URL.`);
         }
 
+        const data = await readJsonSafe(res);
+
+        if (res.ok && !data) {
+          if (!window.getBackendUrl()) window.__sameOriginIsStatic = true;
+          window.isBackendConnected = false;
+          window.updateBackendStatusBadge(false);
+          setTimeout(window.openBackendConfigModal, 400);
+          throw new Error('WhatsApp backend is not available on this host (Cloudflare Pages is static-only). Connect your Render backend URL in Settings.');
+        }
+
         if (!res.ok) {
-          let errData = {};
-          try { errData = await res.json(); } catch (_) {}
+          const errData = data || {};
 
           if (window.isSubscriptionDenial(res.status, errData)) {
             await window.handleBackendSubscriptionDenial(errData);
@@ -4530,14 +5202,14 @@
           method: 'POST',
           headers: authHeaders
         });
-        if (res.status === 403) {
-          const errData = await res.json().catch(() => ({}));
-          if (window.isSubscriptionDenial(res.status, errData)) {
-            await window.handleBackendSubscriptionDenial(errData);
-            throw new Error(errData.message || `Access denied (${errData.code || 'SUBSCRIPTION_INACTIVE'})`);
+        const data = await readJsonSafe(res);
+        if (res.status === 403 && data) {
+          if (window.isSubscriptionDenial(res.status, data)) {
+            await window.handleBackendSubscriptionDenial(data);
+            throw new Error(data.message || `Access denied (${data.code || 'SUBSCRIPTION_INACTIVE'})`);
           }
         }
-        if (!res.ok) {
+        if (!res.ok || !data) {
           throw new Error(`WhatsApp backend server is not available at ${window.getApiUrl('/api/whatsapp/disconnect')}.`);
         }
         window.showToast('WhatsApp session disconnected.');
@@ -4547,17 +5219,105 @@
       }
     };
 
+    window.syncWorkspaceFromServer = syncWorkspaceFromServer;
+    window.getActiveStorageMode = () => activeStorageMode;
+
     setInterval(() => {
       if (currentUser && !window.__tsdcAccessBlocked) window.fetchStatus();
     }, 6000);
+
+    setInterval(() => {
+      if (currentUser && !window.__tsdcAccessBlocked && activeStorageMode === 'workspace' && window.isBackendConnected) {
+        syncWorkspaceFromServer(false);
+      }
+    }, 8000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser && !window.__tsdcAccessBlocked) {
+        window.fetchStatus();
+        if (activeStorageMode === 'workspace') syncWorkspaceFromServer(false);
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (currentUser && !window.__tsdcAccessBlocked && activeStorageMode === 'workspace') {
+        syncWorkspaceFromServer(false);
+      }
+    });
 
     window.updateBackendStatusBadge(true);
     initFirebase();
   </script>
 
   <script>
-    // Tab switching & Modal helpers
-    function switchTab(tabId) {
+    // Tab switching, Modal History, & Back Button support
+    window.__activeTab = 'composer';
+    window.__handlingPopState = false;
+
+    try {
+      if (!history.state || !history.state.uiTab) {
+        history.replaceState({ uiTab: 'composer', uiModal: null }, '');
+      }
+    } catch (_) {}
+
+    window.__uiOpenModal = function(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      try {
+        if (!history.state || history.state.uiModal !== modalId) {
+          history.pushState({ uiTab: window.__activeTab || 'composer', uiModal: modalId }, '');
+        }
+      } catch (_) {}
+    };
+
+    window.__uiCloseModal = function(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.add('hidden');
+      try {
+        if (!window.__handlingPopState && history.state && history.state.uiModal === modalId) {
+          history.back();
+        }
+      } catch (_) {}
+    };
+
+    // Click backdrop to close any open modal
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          window.__uiCloseModal(overlay.id);
+        }
+      });
+    });
+
+    // Escape key closes topmost open modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const openModals = Array.from(document.querySelectorAll('.modal-overlay:not(.hidden)'));
+        const top = openModals[openModals.length - 1];
+        if (top) window.__uiCloseModal(top.id);
+      }
+    });
+
+    // Browser & Mobile Back Button closes open modals first, then walks back through tabs
+    window.addEventListener('popstate', (event) => {
+      window.__handlingPopState = true;
+      try {
+        const openModals = document.querySelectorAll('.modal-overlay:not(.hidden)');
+        if (openModals.length > 0) {
+          openModals.forEach(el => el.classList.add('hidden'));
+          return;
+        }
+        const targetTab = (event.state && event.state.uiTab) || 'composer';
+        if (targetTab !== window.__activeTab) {
+          switchTab(targetTab, false);
+        }
+      } finally {
+        setTimeout(() => { window.__handlingPopState = false; }, 0);
+      }
+    });
+
+    function switchTab(tabId, pushHistory = true) {
       document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
       const activeSec = document.getElementById(`section-${tabId}`);
       if (activeSec) activeSec.classList.add('active');
@@ -4582,6 +5342,20 @@
       const mobBtn = document.getElementById(`mob-${tabId}`);
       if (mobBtn) mobBtn.classList.add('active');
 
+      if (pushHistory && tabId !== window.__activeTab) {
+        try {
+          history.pushState({ uiTab: tabId, uiModal: null }, '');
+        } catch (_) {}
+      }
+      window.__activeTab = tabId;
+
+      if (['contacts', 'composer', 'reports'].includes(tabId)
+          && typeof window.syncWorkspaceFromServer === 'function'
+          && typeof window.getActiveStorageMode === 'function'
+          && window.getActiveStorageMode() === 'workspace') {
+        window.syncWorkspaceFromServer(false);
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -4589,10 +5363,10 @@
       document.getElementById('newContactName').value = '';
       document.getElementById('newContactPhone').value = '';
       document.getElementById('newContactConsent').checked = true;
-      document.getElementById('addContactModal').classList.remove('hidden');
+      window.__uiOpenModal('addContactModal');
     }
     function closeAddContactModal() {
-      document.getElementById('addContactModal').classList.add('hidden');
+      window.__uiCloseModal('addContactModal');
     }
 
     function insertToken(token) {
