@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>WhatsApp Personal Broadcast Desk</title>
   <meta name="description" content="Professional multi-user dashboard for personal WhatsApp broadcasts with Firebase authentication, contact segmentation, campaign composer, and delivery reports.">
   <meta property="og:title" content="WhatsApp Personal Broadcast Desk">
@@ -55,8 +55,7 @@
     html, body {
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden !important;
-      touch-action: pan-y;
+      overflow-x: clip;
       -webkit-text-size-adjust: 100%;
       background-color: var(--wa-bg);
       color: var(--slate-900);
@@ -64,7 +63,11 @@
       font-size: 13.5px;
       line-height: 1.5;
       min-height: 100vh;
+      min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
+    }
+    body:has(.modal-overlay:not(.hidden)) {
+      overflow: hidden;
     }
 
     /* Custom Scrollbar */
@@ -117,9 +120,10 @@
       display: grid;
       grid-template-columns: 260px minmax(0, 1fr);
       min-height: 100vh;
+      min-height: 100dvh;
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden;
+      overflow-x: clip;
       min-width: 0;
       box-sizing: border-box;
     }
@@ -279,7 +283,7 @@
     .main-area {
       min-width: 0;
       max-width: 100%;
-      overflow-x: hidden;
+      overflow-x: clip;
       display: flex;
       flex-direction: column;
       position: relative;
@@ -381,7 +385,7 @@
       flex: 1;
       min-width: 0;
       box-sizing: border-box;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
     .tab-section {
       display: none;
@@ -455,7 +459,7 @@
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
     .card-header {
       display: flex;
@@ -786,6 +790,8 @@
       max-width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
       border: 1px solid var(--slate-200);
       border-radius: var(--radius-md);
       background: white;
@@ -848,6 +854,8 @@
       overflow-x: auto;
       padding: 4px 2px 8px;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior-x: contain;
       align-items: center;
     }
     .list-pill {
@@ -1009,17 +1017,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 14px;
       z-index: 150;
       box-sizing: border-box;
+      overscroll-behavior: contain;
     }
     .modal-content {
       background: white;
       border-radius: var(--radius-lg);
       max-width: 520px;
       width: 100%;
-      max-height: calc(100vh - 40px);
+      max-height: calc(100vh - 28px);
+      max-height: calc(100dvh - 28px);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       padding: 24px;
       box-shadow: var(--shadow-lg);
@@ -1084,13 +1095,14 @@
       right: 0 !important;
       width: 100% !important;
       max-width: 100vw !important;
-      height: 60px;
+      min-height: 60px;
+      height: auto;
       background: var(--slate-900);
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 9999 !important;
       justify-content: space-around;
       align-items: center;
-      padding: 4px 6px env(safe-area-inset-bottom, 4px);
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
       box-sizing: border-box;
       box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
     }
@@ -1101,8 +1113,9 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
+      min-height: 44px;
       color: var(--slate-400);
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 700;
       background: transparent;
       border: none;
@@ -1125,16 +1138,16 @@
     /* RESPONSIVE BREAKPOINTS */
     @media (max-width: 980px) {
       html, body {
-        width: 100% !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
       }
       .app-shell {
         display: block !important;
         width: 100% !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
-        padding-bottom: 84px !important;
+        max-width: 100% !important;
+        overflow-x: clip !important;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
       }
       .sidebar { display: none !important; }
       .mobile-bar { display: flex !important; }
@@ -1142,7 +1155,7 @@
       .main-area {
         width: 100% !important;
         max-width: 100% !important;
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
       }
       .top-header {
         padding: 12px 16px !important;
@@ -1155,6 +1168,7 @@
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        overflow-x: clip !important;
       }
       .grid-2col {
         display: flex !important;
@@ -1173,16 +1187,35 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .form-input, select.form-input, textarea.form-input {
+        font-size: 16px;
+      }
+    }
+
     @media (max-width: 600px) {
       .top-header {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 10px !important;
+        padding: 10px 14px !important;
+        gap: 8px !important;
+      }
+      .header-title-block h1 {
+        font-size: 16px;
       }
       .header-actions {
         display: flex !important;
-        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
         width: 100% !important;
+      }
+      .top-header .header-actions > .btn-primary {
+        display: none !important;
+      }
+      .wa-status-badge {
+        padding: 5px 10px;
+        font-size: 10.5px;
       }
       .card-header {
         flex-direction: column;
@@ -1216,8 +1249,12 @@
       .contact-actions-group {
         width: 100%;
         display: grid !important;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px !important;
+      }
+      .contact-actions-group #bulkAssignListSelect {
+        grid-column: 1 / -1;
+        width: 100% !important;
       }
       .contact-actions-group .btn {
         width: 100%;
@@ -1225,12 +1262,21 @@
         padding: 8px 6px;
       }
 
+      .wa-bubble {
+        max-width: 100%;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+      }
       .modal-content {
         padding: 18px 14px;
         border-radius: var(--radius-md);
+        max-height: calc(100dvh - 20px);
       }
       .toast-container {
-        bottom: 70px;
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px));
         left: 10px;
         right: 10px;
       }
@@ -1378,7 +1424,7 @@
       <div class="view-content">
 
         <!-- 3-DAY PRE-EXPIRY WARNING BANNER -->
-        <div id="tsdcSubscriptionWarningBanner" class="hidden" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #92400e; font-size: 13px;">
+        <div id="tsdcSubscriptionWarningBanner" class="hidden" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: #92400e; font-size: 13px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div>
@@ -1610,22 +1656,22 @@
         <!-- 2. CONNECT SECTION -->
         <section id="section-connect" class="tab-section">
           <!-- Backend Host Banner -->
-          <div id="backendNoticeBanner" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
-            <div style="display: flex; align-items: center; gap: 14px; min-width: 260px;">
+          <div id="backendNoticeBanner" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 220px;">
               <div id="backendStatusIcon" style="width: 40px; height: 40px; border-radius: 10px; background: #e7f7ef; color: var(--wa-teal); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
               </div>
-              <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="min-width: 0; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span style="font-weight: 700; font-size: 14px; color: var(--slate-900);">Node.js WhatsApp Backend</span>
                   <span id="backendBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: var(--slate-200); color: var(--slate-700);">CHECKING</span>
                 </div>
-                <div id="backendEndpointDisplay" class="mono" style="font-size: 12px; color: var(--slate-500); margin-top: 2px;">
+                <div id="backendEndpointDisplay" class="mono" style="font-size: 12px; color: var(--slate-500); margin-top: 2px; word-break: break-all;">
                   Target: Same Origin (default)
                 </div>
               </div>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <button class="btn btn-sm" onclick="window.runBackendTest(true)">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 <span>Test Ping</span>
@@ -1652,8 +1698,8 @@
 
               <!-- Backend Offline Warning Banner -->
               <div id="backendOfflineAlert" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e;">
-                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
-                  <div>
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                  <div style="min-width: 0; flex: 1 1 220px;">
                     <div style="font-weight: 700; color: #78350f; margin-bottom: 2px; display: flex; align-items: center; gap: 6px;">
                       <svg class="icon icon-sm" viewBox="0 0 24 24" style="color: #d97706;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                       <span>Node.js Backend Required for WhatsApp Pairing</span>
@@ -2187,9 +2233,9 @@
 
         <div id="backendTestResult" style="display: none; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 16px;"></div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px;">
           <button type="button" class="btn btn-sm" id="btnTestBackend" onclick="window.runBackendTest(false)">Test Connection</button>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="btn" onclick="window.closeBackendConfigModal()">Close</button>
             <button type="button" class="btn btn-primary" onclick="window.saveBackendConfig()">Save & Apply</button>
           </div>
