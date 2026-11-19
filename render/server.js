@@ -3,7 +3,6 @@ const QRCode = require('qrcode');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -37,25 +36,14 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 // ==========================================
 // PUBLIC HEALTH & CONFIG ROUTES
 // ==========================================
-app.get('/', (req, res) => {
-  const info = {
+app.get('/', (_req, res) => {
+  res.json({
     status: 'ok',
     server: 'WhatsApp Broadcast Simple Server',
     engine: 'baileys-ws',
     healthEndpoint: '/api/health',
     time: new Date().toISOString()
-  };
-  const accept = String(req.headers.accept || '');
-  if (accept.includes('text/html') && req.query.format !== 'json') {
-    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.get('host');
-    const selfUrl = host ? `${proto}://${host}` : '';
-    const dashUrl = selfUrl
-      ? `https://broadcast.tsdc.in/?backend=${encodeURIComponent(selfUrl)}`
-      : 'https://broadcast.tsdc.in';
-    return res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WhatsApp Broadcast Backend</title></head><body style="font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#111b21;padding:24px;margin:0;"><div style="max-width:460px;margin:40px auto;background:#fff;border-radius:14px;padding:24px;box-shadow:0 6px 20px rgba(0,0,0,0.08);border:1px solid #e9edef;"><div style="display:inline-block;padding:4px 10px;border-radius:999px;background:#e7f7ef;color:#008069;font-size:12px;font-weight:700;margin-bottom:10px;">ONLINE • BAILEYS WS</div><h2 style="margin:0 0 8px;">WhatsApp Broadcast Backend</h2><p style="margin:0 0 18px;color:#54656f;font-size:14px;line-height:1.5;">Your Node.js backend is running. Open your dashboard connected to this server below:</p><a href="${dashUrl}" style="display:block;text-align:center;background:#008069;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:700;font-size:14px;">Open Broadcast Dashboard</a><p style="margin:14px 0 0;font-size:12px;color:#667781;word-break:break-all;">Backend URL: <code>${selfUrl}</code></p></div></body></html>`);
-  }
-  res.json(info);
+  });
 });
 
 app.get('/api/health', (_req, res) => {
@@ -215,64 +203,13 @@ function workspaceKey(user) {
   return (user?.email ? String(user.email).trim().toLowerCase() : '') || String(user?.uid || 'default');
 }
 
-function createFirebaseCustomTokenFromEnv(uid, claims = {}) {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!raw) return null;
-  const sa = JSON.parse(raw);
-  if (!sa || !sa.client_email || !sa.private_key) return null;
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: sa.client_email,
-    sub: sa.client_email,
-    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
-    iat: now,
-    exp: now + 3600,
-    uid,
-    claims
-  })).toString('base64url');
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(`${header}.${payload}`);
-  const signature = signer.sign(sa.private_key, 'base64url');
-  return `${header}.${payload}.${signature}`;
-}
-
-app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, (req, res) => {
-  try {
-    const cleanUid = workspaceKey(req.user)
-      .replace(/[^a-zA-Z0-9_-]/g, '_')
-      .slice(0, 128);
-    const customToken = createFirebaseCustomTokenFromEnv(cleanUid, {
-      email: req.user.email || undefined,
-      tsdcSso: true
-    });
-    if (customToken) {
-      return res.json({ ok: true, customToken, uid: cleanUid });
-    }
-  } catch (err) {
-    console.warn('Custom token generation skipped:', err.message);
-  }
+app.post('/api/auth/firebase-token', authMiddleware, requireBroadcastAccess, (_req, res) => {
   res.json({ ok: false, reason: 'custom_token_unavailable' });
-});
-
-app.get('/api/qr', async (req, res) => {
-  const rawUrl = String(req.query.url || '').trim();
-  if (!rawUrl || rawUrl.length > 1000 || !/^https?:\/\//i.test(rawUrl)) {
-    return res.status(400).json({ error: 'Valid http(s) url parameter required.' });
-  }
-  try {
-    const qrDataUrl = await QRCode.toDataURL(rawUrl, { width: 260, margin: 2 });
-    return res.json({ ok: true, qrDataUrl });
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to generate QR code.' });
-  }
 });
 
 app.get('/api/workspace', authMiddleware, requireBroadcastAccess, (req, res) => {
   const store = readStore();
-  const key = workspaceKey(req.user);
-  const uidFallback = req.user?.uid && store.tsdcWorkspaces?.[req.user.uid];
-  const ws = store.tsdcWorkspaces?.[key] || uidFallback || {
+  const ws = store.tsdcWorkspaces?.[workspaceKey(req.user)] || {
     profile: { name: req.user.email ? req.user.email.split('@')[0] : 'TSDC User', company: '' },
     lists: [],
     contacts: [],
@@ -367,11 +304,166 @@ function readMultipartCsv(req) {
 const userSockets = new Map();
 const userStates = new Map();
 const userBusy = new Map();
+const userBroadcastJobs = new Map();
 const manualStops = new Set();
 
-function getWaState(accountKey) {
-  if (!userStates.has(accountKey)) {
-    userStates.set(accountKey, {
+const MAX_CONTACTS_PER_WAVE = 5;
+const MAX_PACING_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours (240 minutes)
+const MAX_PACING_WINDOW_MINUTES = 240;
+
+function randomInt(min, max) {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  if (hi <= lo) return lo;
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+}
+
+function buildSafeWaves(list, maxPerWave = MAX_CONTACTS_PER_WAVE) {
+  if (list.length <= 1) return list.length ? [list.slice()] : [];
+  const waves = [];
+  let idx = 0;
+
+  // Ensure >= 2 waves whenever >= 2 contacts so first & last messages span the 4-hour window, never > 5 per wave
+  const minWaveSize = list.length <= 5 ? 1 : 2;
+  const effectiveMax = list.length <= 5 ? Math.min(2, maxPerWave) : (list.length <= 12 ? Math.min(3, maxPerWave) : maxPerWave);
+
+  while (idx < list.length) {
+    const remaining = list.length - idx;
+    let size;
+    if (remaining <= effectiveMax) {
+      size = (waves.length === 0 && remaining >= 2 && list.length <= 5) ? 1 : remaining;
+    } else {
+      size = randomInt(minWaveSize, effectiveMax);
+    }
+    waves.push(list.slice(idx, idx + size));
+    idx += size;
+  }
+  return waves;
+}
+
+function generateUnusualWaveDelays(numWaves, _contactCount, targetWindowMs = MAX_PACING_WINDOW_MS) {
+  const gapCount = numWaves - 1;
+  if (gapCount <= 0) return [];
+
+  // Reserve estimated typing + send overhead so wall-clock time between first and last message lands ~4 hours
+  const estExecMs = Math.min(30 * 60 * 1000, numWaves * 9000);
+  const maxDelayBudgetMs = Math.max(60000, targetWindowMs - estExecMs);
+  const minDelayBudgetMs = Math.max(60000, Math.round(maxDelayBudgetMs * 0.94));
+  const targetTotalMs = randomInt(minDelayBudgetMs, maxDelayBudgetMs);
+
+  if (gapCount === 1) {
+    return [targetTotalMs];
+  }
+
+  // Bounded irregular weights (0.35x to 2.20x average) ensure unusual unpredictable intervals
+  // while preventing waves from bunching in the first hour.
+  const rawWeights = Array.from({ length: gapCount }, () => 0.35 + Math.pow(Math.random(), 1.7) * 1.85);
+  const weightSum = rawWeights.reduce((acc, w) => acc + w, 0);
+
+  const delays = rawWeights.map((w) => {
+    const base = Math.round((w / weightSum) * targetTotalMs);
+    const oddJitter = randomInt(-2950, 2950);
+    return Math.max(15000, base + oddJitter);
+  });
+
+  // Normalize exact sum so last wave consistently fires ~4 hours after the first wave
+  const currentSum = delays.reduce((a, b) => a + b, 0);
+  if (currentSum > 0) {
+    const scale = targetTotalMs / currentSum;
+    for (let i = 0; i < delays.length; i++) {
+      delays[i] = Math.max(12000, Math.floor(delays[i] * scale));
+    }
+  }
+  return delays;
+}
+
+function resolveSpintaxMessage(template, recipientName, autoVary = true) {
+  let raw = String(template || '');
+  if (!raw) return '';
+
+  // Protect double-brace tokens like {{name}} before parsing single-brace {a|b|c} spintax
+  const tokens = [];
+  raw = raw.replace(/\{\{[^}]*\}\}/g, (match) => {
+    const idx = tokens.length;
+    tokens.push(match);
+    return `\uE000TOK_${idx}\uE001`;
+  });
+
+  const hasExplicitSpintax = /\{[^{}]*\|[^{}]*\}/.test(raw);
+  if (autoVary && !hasExplicitSpintax) {
+    // Automatically vary common opening greetings cleanly when user didn't add manual spintax
+    raw = raw.replace(/^(\s*)(Hi|Hello|Hey)\b/i, (_m, lead, word) => {
+      const options = ['Hi', 'Hello', 'Hey'];
+      const chosen = options[randomInt(0, options.length - 1)];
+      return lead + (word === word.toUpperCase() ? chosen.toUpperCase() : chosen);
+    });
+    // Subtle organic newline variance on multi-line messages so every message isn't byte-identical
+    if (raw.includes('\n\n') && Math.random() < 0.35) {
+      raw = raw.replace('\n\n', '\n');
+    }
+  }
+
+  // Iteratively resolve nested spintax {option1|option2|...}
+  let guard = 0;
+  while (/\{([^{}]*\|[^{}]*)\}/.test(raw) && guard < 15) {
+    raw = raw.replace(/\{([^{}]*\|[^{}]*)\}/g, (_m, inner) => {
+      const choices = inner.split('|');
+      return choices[randomInt(0, choices.length - 1)] ?? '';
+    });
+    guard++;
+  }
+
+  // Restore double-brace placeholders and inject recipient name
+  raw = raw.replace(/\uE000TOK_(\d+)\uE001/g, (_m, idx) => tokens[Number(idx)] ?? '');
+  return raw.replace(/\{\{\s*name\s*\}\}/gi, recipientName);
+}
+
+function computeTypingDurationMs(text, hasMedia) {
+  const len = String(text || '').length;
+  const estimated = 2200 + Math.min(4800, len * 32) + (hasMedia ? 900 : 0) + randomInt(-450, 1250);
+  return Math.max(2500, Math.min(8500, estimated));
+}
+
+async function cancellableSleep(ms, job, canContinueFn) {
+  if (ms <= 0) return !(job?.cancelled) && (!canContinueFn || canContinueFn());
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (job?.cancelled) return false;
+    if (canContinueFn && !canContinueFn()) return false;
+    const step = Math.min(1000, deadline - Date.now());
+    if (step > 0) await new Promise((r) => setTimeout(r, step));
+  }
+  return !(job?.cancelled) && (!canContinueFn || canContinueFn());
+}
+
+function formatBroadcastJobSummary(job) {
+  if (!job) return null;
+  return {
+    id: job.id,
+    active: Boolean(job.active),
+    status: job.status,
+    totalContacts: job.totalContacts,
+    processedCount: job.processedCount,
+    sentCount: job.sentCount,
+    failedCount: job.failedCount,
+    currentWave: job.currentWave,
+    totalWaves: job.totalWaves,
+    currentWaveSize: job.currentWaveSize,
+    maxPerWave: job.maxPerWave,
+    maxSpanMinutes: job.maxSpanMinutes,
+    typingSimulation: Boolean(job.typingSimulation),
+    spintaxEnabled: Boolean(job.spintaxEnabled),
+    nextWaveAt: job.nextWaveAt,
+    estimatedEndAt: job.estimatedEndAt,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    note: job.note || ''
+  };
+}
+
+function getWaState(uid) {
+  if (!userStates.has(uid)) {
+    userStates.set(uid, {
       status: 'disconnected',
       qrDataUrl: null,
       message: 'WhatsApp session disconnected. Click "Start Pairing" to generate a QR code.',
@@ -379,28 +471,22 @@ function getWaState(accountKey) {
       lastSync: null
     });
   }
-  return userStates.get(accountKey);
+  return userStates.get(uid);
 }
 
-function safeUserDir(accountKey, legacyUid = null) {
-  const primary = path.join(AUTH_BASE_DIR, String(accountKey).replace(/[^a-zA-Z0-9_-]/g, '_'));
-  if (fs.existsSync(path.join(primary, 'creds.json'))) return primary;
-  if (legacyUid && legacyUid !== accountKey) {
-    const legacy = path.join(AUTH_BASE_DIR, String(legacyUid).replace(/[^a-zA-Z0-9_-]/g, '_'));
-    if (fs.existsSync(path.join(legacy, 'creds.json'))) return legacy;
-  }
-  return primary;
+function safeUserDir(uid) {
+  return path.join(AUTH_BASE_DIR, String(uid).replace(/[^a-zA-Z0-9_-]/g, '_'));
 }
 
-async function startUserWhatsApp(accountKey, legacyUid = null) {
-  const state = getWaState(accountKey);
-  manualStops.delete(accountKey);
+async function startUserWhatsApp(userId) {
+  const state = getWaState(userId);
+  manualStops.delete(userId);
 
-  const prev = userSockets.get(accountKey);
+  const prev = userSockets.get(userId);
   if (prev) {
     try { prev.ev.removeAllListeners(); } catch (_) {}
     try { prev.end(); } catch (_) {}
-    userSockets.delete(accountKey);
+    userSockets.delete(userId);
   }
 
   state.status = 'starting';
@@ -409,7 +495,7 @@ async function startUserWhatsApp(accountKey, legacyUid = null) {
   state.lastSync = new Date().toISOString();
 
   try {
-    const authDir = safeUserDir(accountKey, legacyUid);
+    const authDir = safeUserDir(userId);
     fs.mkdirSync(authDir, { recursive: true });
     const { state: authState, saveCreds } = await useMultiFileAuthState(authDir);
     const fallbackVersion = { version: [2, 3000, 1043857760] };
@@ -430,11 +516,11 @@ async function startUserWhatsApp(accountKey, legacyUid = null) {
       keepAliveIntervalMs: 25000
     });
 
-    userSockets.set(accountKey, sock);
+    userSockets.set(userId, sock);
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', async (update) => {
-      if (userSockets.get(accountKey) !== sock) return;
+      if (userSockets.get(userId) !== sock) return;
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -464,14 +550,14 @@ async function startUserWhatsApp(accountKey, legacyUid = null) {
       }
 
       if (connection === 'close') {
-        userSockets.delete(accountKey);
-        if (manualStops.has(accountKey)) {
-          manualStops.delete(accountKey);
+        userSockets.delete(userId);
+        if (manualStops.has(userId)) {
+          manualStops.delete(userId);
           return;
         }
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         if (statusCode === DisconnectReason.restartRequired) {
-          return startUserWhatsApp(accountKey, legacyUid);
+          return startUserWhatsApp(userId);
         }
         if (statusCode === DisconnectReason.loggedOut) {
           try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (_) {}
@@ -500,16 +586,8 @@ async function startUserWhatsApp(accountKey, legacyUid = null) {
 // WHATSAPP API ROUTES
 // ==========================================
 app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
-  const accountKey = workspaceKey(req.user);
-  const s = getWaState(accountKey);
-  if (
-    s.status === 'disconnected'
-    && !userSockets.has(accountKey)
-    && !manualStops.has(accountKey)
-    && fs.existsSync(path.join(safeUserDir(accountKey, req.user.uid), 'creds.json'))
-  ) {
-    startUserWhatsApp(accountKey, req.user.uid);
-  }
+  const s = getWaState(req.user.uid);
+  const job = userBroadcastJobs.get(req.user.uid) || null;
   res.json({
     status: s.status,
     qrDataUrl: s.qrDataUrl,
@@ -517,27 +595,39 @@ app.get('/api/status', authMiddleware, requireBroadcastAccess, (req, res) => {
     connected: s.status === 'connected',
     connectedPhone: s.connectedPhone,
     lastSync: s.lastSync,
-    userId: accountKey
+    userId: req.user.uid,
+    broadcastJob: formatBroadcastJobSummary(job)
   });
 });
 
+app.post('/api/send/cancel', authMiddleware, requireBroadcastAccess, (req, res) => {
+  const uid = req.user.uid;
+  const job = userBroadcastJobs.get(uid);
+  if (!job || !job.active) {
+    return res.json({ ok: true, active: false, message: 'No active broadcast to cancel.' });
+  }
+  job.cancelled = true;
+  job.status = 'cancelled';
+  job.note = 'Broadcast stopped by user.';
+  res.json({ ok: true, active: true, cancelled: true, message: 'Stopping broadcast after current step…' });
+});
+
 app.post('/api/whatsapp/connect', authMiddleware, requireBroadcastAccess, (req, res) => {
-  const accountKey = workspaceKey(req.user);
-  startUserWhatsApp(accountKey, req.user.uid);
+  startUserWhatsApp(req.user.uid);
   res.json({ ok: true, message: 'WhatsApp pairing started. Waiting for QR code…' });
 });
 
 app.post('/api/whatsapp/disconnect', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const accountKey = workspaceKey(req.user);
-  manualStops.add(accountKey);
-  const sock = userSockets.get(accountKey);
+  const uid = req.user.uid;
+  manualStops.add(uid);
+  const sock = userSockets.get(uid);
   if (sock) {
     try { await sock.logout(); } catch (_) {}
     try { sock.end(); } catch (_) {}
-    userSockets.delete(accountKey);
+    userSockets.delete(uid);
   }
-  try { fs.rmSync(safeUserDir(accountKey, req.user.uid), { recursive: true, force: true }); } catch (_) {}
-  const s = getWaState(accountKey);
+  try { fs.rmSync(safeUserDir(uid), { recursive: true, force: true }); } catch (_) {}
+  const s = getWaState(uid);
   s.status = 'disconnected';
   s.qrDataUrl = null;
   s.connectedPhone = null;
@@ -578,7 +668,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, asyn
 });
 
 app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) => {
-  const uid = workspaceKey(req.user);
+  const uid = req.user.uid;
   const state = getWaState(uid);
   const sock = userSockets.get(uid);
 
@@ -587,7 +677,8 @@ app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) =
     return res.status(409).json({ error: 'WhatsApp is not connected. Please scan the QR code first.' });
   }
 
-  const { contacts, message, confirmed, media } = req.body || {};
+  const { contacts, message, confirmed, media, autoVary } = req.body || {};
+  const enableAutoVary = autoVary !== false;
   if (!confirmed) return res.status(400).json({ error: 'Consent confirmation is required.' });
   if (!Array.isArray(contacts) || contacts.length === 0 || contacts.length > 250) {
     return res.status(400).json({ error: 'Select between 1 and 250 contacts per batch.' });
@@ -605,45 +696,160 @@ app.post('/api/send', authMiddleware, requireBroadcastAccess, async (req, res) =
     unique.add(phone);
   }
 
+  const waves = buildSafeWaves(contacts, MAX_CONTACTS_PER_WAVE);
+  const waveDelays = generateUnusualWaveDelays(waves.length, contacts.length, MAX_PACING_WINDOW_MS);
+  const totalDelayMs = waveDelays.reduce((a, b) => a + b, 0);
+  const startedAtMs = Date.now();
+  const estimatedEndIso = new Date(startedAtMs + totalDelayMs + waves.length * 6000).toISOString();
+
+  const job = {
+    id: `job_${startedAtMs}_${Math.random().toString(36).slice(2, 7)}`,
+    active: true,
+    cancelled: false,
+    status: 'running',
+    totalContacts: contacts.length,
+    processedCount: 0,
+    sentCount: 0,
+    failedCount: 0,
+    currentWave: 0,
+    totalWaves: waves.length,
+    currentWaveSize: 0,
+    maxPerWave: MAX_CONTACTS_PER_WAVE,
+    maxSpanMinutes: MAX_PACING_WINDOW_MINUTES,
+    typingSimulation: true,
+    spintaxEnabled: true,
+    startedAt: new Date(startedAtMs).toISOString(),
+    nextWaveAt: null,
+    estimatedEndAt: estimatedEndIso,
+    finishedAt: null,
+    note: `Anti-ban pacing active: max ${MAX_CONTACTS_PER_WAVE}/wave with typing simulation & spintax spread across ~4 hours.`
+  };
+
   userBusy.set(uid, true);
-  res.json({ accepted: true, count: contacts.length, hasMedia: Boolean(media), note: 'Broadcast batch accepted.' });
+  userBroadcastJobs.set(uid, job);
+
+  res.json({
+    accepted: true,
+    count: contacts.length,
+    hasMedia: Boolean(media),
+    safetyMode: {
+      maxPerWave: MAX_CONTACTS_PER_WAVE,
+      maxSpanMinutes: MAX_PACING_WINDOW_MINUTES,
+      totalWaves: waves.length,
+      typingSimulation: true,
+      spintaxEnabled: true,
+      estimatedFinishAt: estimatedEndIso
+    },
+    note: `Anti-ban pacing active: ${waves.length} wave(s) (max ${MAX_CONTACTS_PER_WAVE}/wave), typing simulation & Spintax spread across ~4 hours.`
+  });
 
   const mediaBuf = media?.base64 ? Buffer.from(media.base64, 'base64') : null;
 
   (async () => {
     try {
-      for (const c of contacts) {
-        const phone = cleanPhone(c.phone);
-        const name = safeText(c.name || 'there', 150);
-        const text = cleanMsg.replace(/\{\{\s*name\s*\}\}/gi, name);
-        try {
-          const results = await sock.onWhatsApp(phone);
-          const match = Array.isArray(results) ? results.find(r => r.exists) : null;
-          const jid = match?.jid || `${phone}@s.whatsapp.net`;
-
-          if (mediaBuf && media?.mimetype) {
-            if (media.mimetype.startsWith('image/')) {
-              await sock.sendMessage(jid, { image: mediaBuf, caption: text });
-            } else if (media.mimetype.startsWith('video/')) {
-              await sock.sendMessage(jid, { video: mediaBuf, caption: text });
-            } else {
-              await sock.sendMessage(jid, {
-                document: mediaBuf,
-                mimetype: media.mimetype,
-                fileName: media.filename || 'attachment.pdf',
-                caption: text
-              });
-            }
-          } else {
-            await sock.sendMessage(jid, { text });
+      for (let wIdx = 0; wIdx < waves.length; wIdx++) {
+        const activeSock = userSockets.get(uid);
+        if (job.cancelled || state.status !== 'connected' || !activeSock) {
+          if (!job.cancelled) {
+            job.status = 'aborted';
+            job.note = 'Broadcast paused/aborted because WhatsApp disconnected.';
           }
-          await new Promise(r => setTimeout(r, 2000));
-        } catch (err) {
-          console.error(`Send failed for ${phone}:`, err.message);
-          await new Promise(r => setTimeout(r, 1000));
+          break;
+        }
+
+        const wave = waves[wIdx];
+        job.currentWave = wIdx + 1;
+        job.currentWaveSize = wave.length;
+        job.nextWaveAt = null;
+        job.note = `Simulating typing & sending Wave ${wIdx + 1} of ${waves.length} (${wave.length} recipient${wave.length > 1 ? 's' : ''}, max ${MAX_CONTACTS_PER_WAVE})…`;
+
+        // Dispatch up to MAX_CONTACTS_PER_WAVE (5) recipients with organic stagger + simulated "typing…" presence
+        await Promise.allSettled(wave.map(async (c, memberIdx) => {
+          if (memberIdx > 0) {
+            const ok = await cancellableSleep(randomInt(700, 2400) * memberIdx, job, () => state.status === 'connected' && Boolean(userSockets.get(uid)));
+            if (!ok) return;
+          }
+          if (job.cancelled || state.status !== 'connected') return;
+          const sockNow = userSockets.get(uid);
+          if (!sockNow) return;
+
+          const phone = cleanPhone(c.phone);
+          const name = safeText(c.name || 'there', 150);
+          const text = resolveSpintaxMessage(cleanMsg, name, enableAutoVary);
+          try {
+            const results = await sockNow.onWhatsApp(phone);
+            const match = Array.isArray(results) ? results.find(r => r.exists) : null;
+            const jid = match?.jid || `${phone}@s.whatsapp.net`;
+
+            // Simulate human "typing..." indicator before sending
+            const typingMs = computeTypingDurationMs(text, Boolean(mediaBuf));
+            try {
+              await sockNow.presenceSubscribe(jid).catch(() => {});
+              await sockNow.sendPresenceUpdate('composing', jid);
+            } catch (_) {}
+
+            const typingOk = await cancellableSleep(typingMs, job, () => state.status === 'connected' && Boolean(userSockets.get(uid)));
+            if (!typingOk) {
+              try { await sockNow.sendPresenceUpdate('paused', jid); } catch (_) {}
+              return;
+            }
+
+            if (mediaBuf && media?.mimetype) {
+              if (media.mimetype.startsWith('image/')) {
+                await sockNow.sendMessage(jid, { image: mediaBuf, caption: text });
+              } else if (media.mimetype.startsWith('video/')) {
+                await sockNow.sendMessage(jid, { video: mediaBuf, caption: text });
+              } else {
+                await sockNow.sendMessage(jid, {
+                  document: mediaBuf,
+                  mimetype: media.mimetype,
+                  fileName: media.filename || 'attachment.pdf',
+                  caption: text
+                });
+              }
+            } else {
+              await sockNow.sendMessage(jid, { text });
+            }
+
+            try { await sockNow.sendPresenceUpdate('paused', jid); } catch (_) {}
+            job.sentCount += 1;
+          } catch (err) {
+            console.error(`Send failed for ${phone}:`, err.message);
+            job.failedCount += 1;
+          } finally {
+            job.processedCount += 1;
+          }
+        }));
+
+        if (job.cancelled) break;
+
+        // Unusual irregular delay before next wave (distributed evenly enough across all 4 hours)
+        if (wIdx < waves.length - 1) {
+          const waitMs = waveDelays[wIdx] || randomInt(60000, 300000);
+          const waitMins = (waitMs / 60000).toFixed(1);
+          job.nextWaveAt = new Date(Date.now() + waitMs).toISOString();
+          job.note = `Anti-ban cooldown after Wave ${wIdx + 1}/${waves.length}. Waiting irregular delay (~${waitMins}m) before next wave…`;
+          const continued = await cancellableSleep(waitMs, job, () => state.status === 'connected' && Boolean(userSockets.get(uid)));
+          if (!continued) {
+            if (!job.cancelled) {
+              job.status = 'aborted';
+              job.note = 'Broadcast stopped because WhatsApp session disconnected.';
+            }
+            break;
+          }
         }
       }
+
+      if (job.status === 'running') {
+        job.status = job.cancelled ? 'cancelled' : 'completed';
+        job.note = job.cancelled
+          ? `Broadcast stopped by user (${job.sentCount}/${job.totalContacts} sent).`
+          : `Completed safely across ${waves.length} wave(s) over 4-hour schedule: ${job.sentCount} sent, ${job.failedCount} failed.`;
+      }
     } finally {
+      job.active = false;
+      job.nextWaveAt = null;
+      job.finishedAt = new Date().toISOString();
       userBusy.set(uid, false);
     }
   })();
