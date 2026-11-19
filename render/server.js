@@ -651,11 +651,12 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, asyn
       for (const [col, val] of Object.entries(r)) {
         k[String(col).trim().toLowerCase().replace(/[\s_-]+/g, '')] = val;
       }
-      const name = safeText(k.name || k.fullname || k.contactname || k.customer || `Contact ${i + 1}`, 150).trim();
+      const rawName = safeText(k.name || k.fullname || k.contactname || k.customer || '', 150).trim();
+      const name = rawName || `Contact ${i + 1}`;
       const phone = cleanPhone(k.phone || k.phonenumber || k.mobile || k.whatsapp || k.number || '');
       const consent = String(k.optedin ?? k.consent ?? k.whatsappconsent ?? k.permission ?? '').trim().toLowerCase();
       const optedIn = ['yes', 'y', 'true', '1', 'opted-in', 'optedin', 'consented'].includes(consent);
-      if (phone && !seen.has(phone)) {
+      if (phone.length >= 8 && phone.length <= 20 && !seen.has(phone)) {
         seen.add(phone);
         contacts.push({ id: `c_${Date.now()}_${i}_${phone}`, ownerId: req.user.uid, name, phone, optedIn, createdAt: new Date().toISOString() });
       }

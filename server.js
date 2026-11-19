@@ -460,14 +460,15 @@ function normalizeContact(row, index, ownerId) {
   for (const [k, v] of Object.entries(row || {})) {
     keys[String(k).trim().toLowerCase().replace(/[\s_-]+/g, '')] = v;
   }
-  const name = keys.name || keys.fullname || keys.contactname || keys.customer || `Contact ${index + 1}`;
+  const rawName = safeText(keys.name || keys.fullname || keys.contactname || keys.customer || '', 150).trim();
+  const name = rawName || `Contact ${index + 1}`;
   const phone = cleanPhone(keys.phone || keys.phonenumber || keys.mobile || keys.whatsapp || keys.number || '');
   const consent = String(keys.optedin ?? keys.consent ?? keys.whatsappconsent ?? keys.permission ?? '').trim().toLowerCase();
   const optedIn = ['yes', 'y', 'true', '1', 'opted-in', 'optedin', 'consented'].includes(consent);
   return {
     id: `c_${Date.now()}_${index}_${phone}`,
     ownerId,
-    name: safeText(name, 150).trim(),
+    name,
     phone,
     optedIn,
     createdAt: new Date().toISOString()
@@ -734,7 +735,7 @@ app.post('/api/contacts/parse-csv', authMiddleware, requireBroadcastAccess, uplo
   const contacts = [];
   for (let i = 0; i < rows.length; i++) {
     const c = normalizeContact(rows[i], i, req.user.uid);
-    if (c.phone && !seen.has(c.phone)) {
+    if (c.phone.length >= 8 && c.phone.length <= 20 && !seen.has(c.phone)) {
       seen.add(c.phone);
       contacts.push(c);
     }

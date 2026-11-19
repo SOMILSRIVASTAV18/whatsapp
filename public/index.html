@@ -2322,6 +2322,7 @@
       deleteDoc,
       collection,
       query,
+      where,
       orderBy,
       onSnapshot,
       addDoc,
@@ -2865,8 +2866,9 @@
       return auth && auth.currentUser ? auth.currentUser.uid : null;
     }
 
-    function canUseFirestore(uid) {
+    function canUseFirestore(uid, requireActiveMode = true) {
       const fbUid = getFirestoreUid();
+      if (requireActiveMode && activeStorageMode !== 'firestore') return false;
       return Boolean(db && fbUid && (!uid || fbUid === uid) && isValidFirestoreId(fbUid));
     }
 
@@ -3072,6 +3074,13 @@
         const app = initializeApp(config);
         auth = getAuth(app);
         db = config.firestoreDatabaseId ? getFirestore(app, config.firestoreDatabaseId) : getFirestore(app);
+        try {
+          await getDocFromServer(doc(db, 'test', 'connection'));
+        } catch (connErr) {
+          if (connErr && String(connErr.message || '').includes('the client is offline')) {
+            console.error('Please check your Firebase configuration.');
+          }
+        }
 
         currentUser = tsdcUser;
         const hasFirebaseSession = await attemptFirebaseCustomTokenBridge(tsdcUser);
@@ -3169,19 +3178,45 @@
     window.saveUserProfile = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('profileName').value.trim();
-      const company = document.getElementById('profileCompany').value.trim();
+      const name = document.getElementById('profileName').value.trim().slice(0, 120);
+      const company = document.getElementById('profileCompany').value.trim().slice(0, 160);
       try {
-        if (canUseFirestore(currentUser.uid)) {
-          await setDoc(doc(db, 'users', currentUser.uid), {
-            id: currentUser.uid,
-            name,
-            email: currentUser.email || '',
-            company,
-            createdAt: new Date().toISOString()
-          }, { merge: true });
-          if (auth.currentUser) {
-            await updateProfile(auth.currentUser, { displayName: name });
+        const fbUid = getFirestoreUid();
+        if (canUseFirestore(fbUid)) {
+          try {
+            const userRef = doc(db, 'users', fbUid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+              await updateDoc(userRef, {
+                name,
+                email: (currentUser.email || '').slice(0, 254),
+                company,
+                updatedAt: new Date().toISOString()
+              });
+            } else {
+              await setDoc(userRef, {
+                id: fbUid,
+                name,
+                email: (currentUser.email || '').slice(0, 254),
+                company,
+                createdAt: new Date().toISOString()
+              });
+            }
+            if (auth.currentUser) {
+              await updateProfile(auth.currentUser, { displayName: name });
+            }
+          } catch (fsErr) {
+            handleFirestoreError(fsErr, OperationType.WRITE, `users/${fbUid}`);
+            if (fsErr && fsErr.code === 'permission-denied') {
+              activeStorageMode = 'workspace';
+              stopFirestoreListeners();
+              updateStorageModeUI('workspace');
+              workspaceProfile = { name, company };
+              currentUser.displayName = name;
+              await persistWorkspaceState();
+            } else {
+              throw fsErr;
+            }
           }
         } else {
           workspaceProfile = { name, company };
@@ -3227,15 +3262,15 @@
 
     // Setup Realtime Firestore Listeners (only when authenticated with Firebase Auth)
     function setupFirestoreListeners(uid) {
-      if (!canUseFirestore(uid)) {
+      if (!canUseFirestore(uid, false)) {
         return startWorkspaceMode();
       }
       stopFirestoreListeners();
       activeStorageMode = 'firestore';
       updateStorageModeUI('firestore');
 
-      const listsCol = collection(db, 'users', uid, 'lists');
-      unsubscribeLists = onSnapshot(listsCol, snap => {
+      const listsQuery = query(collection(db, 'users', uid, 'lists'), where('ownerId', '==', uid));
+      unsubscribeLists = onSnapshot(listsQuery, snap => {
         userLists = [];
         snap.forEach(d => userLists.push({ id: d.id, ...d.data() }));
         userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -3244,15 +3279,14 @@
         renderContactsTable();
         updatePreview();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/lists`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/lists`);
       });
 
-      const contactsCol = collection(db, 'users', uid, 'contacts');
-      unsubscribeContacts = onSnapshot(contactsCol, snap => {
+      const contactsQuery = query(collection(db, 'users', uid, 'contacts'), where('ownerId', '==', uid));
+      unsubscribeContacts = onSnapshot(contactsQuery, snap => {
         contactsList = [];
         snap.forEach(d => contactsList.push({ id: d.id, ...d.data() }));
         if (selectedContactIds.size === 0 && contactsList.length > 0) {
@@ -3264,26 +3298,24 @@
         updateMetrics();
         updatePreview();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/contacts`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/contacts`);
       });
 
-      const reportsCol = collection(db, 'users', uid, 'reports');
-      unsubscribeReports = onSnapshot(reportsCol, snap => {
+      const reportsQuery = query(collection(db, 'users', uid, 'reports'), where('ownerId', '==', uid));
+      unsubscribeReports = onSnapshot(reportsQuery, snap => {
         reportsList = [];
         snap.forEach(d => reportsList.push({ id: d.id, ...d.data() }));
         reportsList.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
         renderReportsTable();
         updateMetrics();
       }, err => {
+        handleFirestoreError(err, OperationType.LIST, `users/${uid}/reports`);
         if (err && err.code === 'permission-denied') {
           startWorkspaceMode();
-          return;
         }
-        handleFirestoreError(err, OperationType.LIST, `users/${uid}/reports`);
       });
     }
 
@@ -3450,23 +3482,39 @@
     window.handleCreateList = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('newListName').value.trim();
+      const name = document.getElementById('newListName').value.trim().slice(0, 120);
       const color = document.getElementById('newListColor').value;
-      const description = document.getElementById('newListDesc').value.trim();
+      const description = document.getElementById('newListDesc').value.trim().slice(0, 300);
       if (!name) return window.showToast('Please enter a list name.', true);
 
+      const fbUid = getFirestoreUid();
+      const useFs = canUseFirestore(fbUid);
       const id = `l_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const listObj = {
         id,
-        ownerId: getWorkspaceOwnerId(),
+        ownerId: useFs ? fbUid : getWorkspaceOwnerId(),
         name,
         color,
         description,
         createdAt: new Date().toISOString()
       };
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await setDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), listObj);
+        if (useFs) {
+          try {
+            await setDoc(doc(db, 'users', fbUid, 'lists', id), listObj);
+          } catch (fsErr) {
+            handleFirestoreError(fsErr, OperationType.CREATE, `users/${fbUid}/lists/${id}`);
+            if (fsErr && fsErr.code === 'permission-denied') {
+              activeStorageMode = 'workspace';
+              stopFirestoreListeners();
+              updateStorageModeUI('workspace');
+              userLists.push({ ...listObj, ownerId: getWorkspaceOwnerId() });
+              userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+              await persistWorkspaceState();
+            } else {
+              throw fsErr;
+            }
+          }
         } else {
           userLists.push(listObj);
           userLists.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -3501,18 +3549,19 @@
       e.preventDefault();
       if (!currentUser) return;
       const id = document.getElementById('editListId').value;
-      const name = document.getElementById('editListName').value.trim();
+      const name = document.getElementById('editListName').value.trim().slice(0, 120);
       const color = document.getElementById('editListColor').value;
-      const description = document.getElementById('editListDesc').value.trim();
+      const description = document.getElementById('editListDesc').value.trim().slice(0, 300);
       if (!id || !name) return;
 
+      const fbUid = getFirestoreUid();
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await updateDoc(doc(db, 'users', getFirestoreUid(), 'lists', id), {
-            ownerId: getFirestoreUid(),
+        if (canUseFirestore(fbUid)) {
+          await updateDoc(doc(db, 'users', fbUid, 'lists', id), {
             name,
             color,
-            description
+            description,
+            updatedAt: new Date().toISOString()
           });
         } else {
           const target = userLists.find(l => l.id === id);
@@ -3528,6 +3577,7 @@
         window.closeEditListModal();
         window.showToast(`List "${name}" updated.`);
       } catch (err) {
+        if (canUseFirestore(fbUid)) handleFirestoreError(err, OperationType.UPDATE, `users/${fbUid}/lists/${id}`);
         window.showToast(err.message, true);
       }
     };
@@ -3866,15 +3916,18 @@
     window.handleAddContact = async function(e) {
       e.preventDefault();
       if (!currentUser) return;
-      const name = document.getElementById('newContactName').value.trim();
+      const rawName = document.getElementById('newContactName').value.trim().slice(0, 150);
+      const name = rawName || 'Contact';
       const phone = document.getElementById('newContactPhone').value.replace(/\D/g, '');
       const optedIn = document.getElementById('newContactConsent').checked;
       const listSelectVal = document.getElementById('newContactListSelect')?.value || '';
 
-      if (!phone || phone.length < 8 || phone.length > 15) {
-        return window.showToast('Please enter an 8-15 digit phone number with country code.', true);
+      if (!phone || phone.length < 8 || phone.length > 20) {
+        return window.showToast('Please enter an 8-20 digit phone number with country code.', true);
       }
 
+      const fbUid = getFirestoreUid();
+      const useFs = canUseFirestore(fbUid);
       const id = `c_${Date.now()}_${phone}`;
       const contactListIds = [];
       if (listSelectVal) {
@@ -3885,7 +3938,7 @@
 
       const contactObj = {
         id,
-        ownerId: getWorkspaceOwnerId(),
+        ownerId: useFs ? fbUid : getWorkspaceOwnerId(),
         name,
         phone,
         optedIn,
@@ -3894,8 +3947,23 @@
       };
 
       try {
-        if (canUseFirestore(getFirestoreUid())) {
-          await setDoc(doc(db, 'users', getFirestoreUid(), 'contacts', id), contactObj);
+        if (useFs) {
+          try {
+            await setDoc(doc(db, 'users', fbUid, 'contacts', id), contactObj);
+          } catch (fsErr) {
+            handleFirestoreError(fsErr, OperationType.CREATE, `users/${fbUid}/contacts/${id}`);
+            if (fsErr && fsErr.code === 'permission-denied') {
+              activeStorageMode = 'workspace';
+              stopFirestoreListeners();
+              updateStorageModeUI('workspace');
+              contactsList.push({ ...contactObj, ownerId: getWorkspaceOwnerId() });
+              selectedContactIds.add(id);
+              renderAllWorkspaceViews();
+              await persistWorkspaceState();
+            } else {
+              throw fsErr;
+            }
+          }
         } else {
           contactsList.push(contactObj);
           selectedContactIds.add(id);
@@ -3948,7 +4016,7 @@
 
         // Fallback: parse client-side directly if backend is offline or static host
         if (!contacts.length) {
-          const text = await file.text();
+          const text = (await file.text()).replace(/^\uFEFF/, '');
           const rows = [];
           let row = [], cell = '', quoted = false;
           for (let i = 0; i < text.length; i++) {
@@ -3976,16 +4044,17 @@
               for (const [k, v] of Object.entries(rowObj)) {
                 keys[String(k).trim().toLowerCase().replace(/[\s_-]+/g, '')] = v;
               }
-              const name = keys.name || keys.fullname || keys.contactname || keys.customer || `Contact ${i + 1}`;
+              const rawName = String(keys.name || keys.fullname || keys.contactname || keys.customer || '').slice(0, 150).trim();
+              const name = rawName || `Contact ${i + 1}`;
               const phone = String(keys.phone || keys.phonenumber || keys.mobile || keys.whatsapp || keys.number || '').replace(/\D/g, '');
               const consent = String(keys.optedin ?? keys.consent ?? keys.whatsappconsent ?? keys.permission ?? '').trim().toLowerCase();
               const optedIn = ['yes', 'y', 'true', '1', 'opted-in', 'optedin', 'consented'].includes(consent);
-              if (phone && phone.length >= 8 && !seen.has(phone)) {
+              if (phone && phone.length >= 8 && phone.length <= 20 && !seen.has(phone)) {
                 seen.add(phone);
                 contacts.push({
                   id: `c_${Date.now()}_${i}_${phone}`,
                   ownerId: getWorkspaceOwnerId(),
-                  name: String(name || 'Contact').slice(0, 150).trim(),
+                  name,
                   phone,
                   optedIn,
                   createdAt: new Date().toISOString()
@@ -3996,22 +4065,73 @@
           }
         }
 
-        if (!contacts.length) throw new Error('Could not parse any valid contacts with phone numbers from this CSV.');
+        if (!contacts.length) throw new Error('Could not parse any valid contacts (8-20 digit phone) from this CSV.');
 
-        window.showToast(`Importing ${count} contacts…`);
-        const useFs = canUseFirestore(getFirestoreUid());
+        // Sanitize every contact record strictly so it satisfies both Firestore rules and workspace schema
         const fbUid = getFirestoreUid();
-        const ownerId = getWorkspaceOwnerId();
+        let useFs = canUseFirestore(fbUid);
+        const ownerId = useFs ? fbUid : getWorkspaceOwnerId();
+        const sanitizedContacts = [];
+        for (let idx = 0; idx < contacts.length; idx++) {
+          const raw = contacts[idx] || {};
+          const cleanDigits = String(raw.phone || '').replace(/\D/g, '');
+          if (cleanDigits.length < 8 || cleanDigits.length > 20) continue;
+          const cleanName = String(raw.name || '').slice(0, 150).trim() || `Contact ${idx + 1}`;
+          const rawId = String(raw.id || `c_${Date.now()}_${idx}_${cleanDigits}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
+          const cleanId = isValidFirestoreId(rawId) ? rawId : `c_${Date.now()}_${idx}_${cleanDigits}`.slice(0, 128);
+          const listIds = activeContactListFilter !== 'all'
+            ? [String(activeContactListFilter)]
+            : (Array.isArray(raw.listIds) ? raw.listIds.map(x => String(x).slice(0, 128)).slice(0, 50) : []);
+          sanitizedContacts.push({
+            id: cleanId,
+            ownerId,
+            name: cleanName,
+            phone: cleanDigits,
+            optedIn: Boolean(raw.optedIn),
+            listIds,
+            createdAt: (typeof raw.createdAt === 'string' && raw.createdAt.length > 0 && raw.createdAt.length <= 64)
+              ? raw.createdAt
+              : new Date().toISOString()
+          });
+        }
 
-        for (const c of contacts) {
-          c.ownerId = ownerId;
-          if (activeContactListFilter !== 'all') {
-            c.listIds = [activeContactListFilter];
-          } else {
-            c.listIds = c.listIds || [];
-          }
+        if (!sanitizedContacts.length) {
+          throw new Error('Could not find valid 8-20 digit phone numbers in this CSV.');
+        }
+
+        window.showToast(`Importing ${sanitizedContacts.length} contacts…`);
+
+        for (let idx = 0; idx < sanitizedContacts.length; idx++) {
+          const c = sanitizedContacts[idx];
           if (useFs) {
-            await setDoc(doc(db, 'users', fbUid, 'contacts', c.id), c);
+            try {
+              await setDoc(doc(db, 'users', fbUid, 'contacts', c.id), c);
+              selectedContactIds.add(c.id);
+              continue;
+            } catch (fsErr) {
+              handleFirestoreError(fsErr, OperationType.WRITE, `users/${fbUid}/contacts/${c.id}`);
+              if (fsErr && fsErr.code === 'permission-denied') {
+                // Switch gracefully to workspace mode and save remaining contacts locally/backend
+                useFs = false;
+                activeStorageMode = 'workspace';
+                stopFirestoreListeners();
+                updateStorageModeUI('workspace');
+                const wsOwnerId = getWorkspaceOwnerId();
+                for (let j = idx; j < sanitizedContacts.length; j++) {
+                  const rem = { ...sanitizedContacts[j], ownerId: wsOwnerId };
+                  const existingIdx = contactsList.findIndex(x => x.phone === rem.phone);
+                  if (existingIdx !== -1) {
+                    contactsList[existingIdx] = { ...contactsList[existingIdx], ...rem, id: contactsList[existingIdx].id };
+                    selectedContactIds.add(contactsList[existingIdx].id);
+                  } else {
+                    contactsList.push(rem);
+                    selectedContactIds.add(rem.id);
+                  }
+                }
+                break;
+              }
+              throw fsErr;
+            }
           } else {
             const existingIdx = contactsList.findIndex(x => x.phone === c.phone);
             if (existingIdx !== -1) {
@@ -4022,14 +4142,13 @@
               selectedContactIds.add(c.id);
             }
           }
-          selectedContactIds.add(c.id);
         }
 
         if (!useFs) {
           renderAllWorkspaceViews();
           await persistWorkspaceState();
         }
-        window.showToast(`Imported ${count} contacts successfully!`);
+        window.showToast(`Imported ${sanitizedContacts.length} contacts successfully!`);
       } catch (err) {
         window.showToast(err.message, true);
       } finally {
@@ -4413,26 +4532,50 @@
           createdAt: new Date().toISOString()
         };
 
-        const useFs = canUseFirestore(getFirestoreUid());
         const fbUid = getFirestoreUid();
+        let useFs = canUseFirestore(fbUid);
 
         if (useFs) {
-          const campRef = doc(collection(db, 'users', fbUid, 'campaigns'));
-          await setDoc(campRef, { ...campObj, id: campRef.id, ownerId: fbUid });
-          for (const c of pendingBatch.contacts) {
-            const reportRef = doc(collection(db, 'users', fbUid, 'reports'));
-            await setDoc(reportRef, {
-              id: reportRef.id,
+          try {
+            const campRef = doc(collection(db, 'users', fbUid, 'campaigns'));
+            await setDoc(campRef, {
+              ...campObj,
+              id: campRef.id,
               ownerId: fbUid,
-              name: c.name,
-              phone: c.phone,
-              status: 'Submitted',
-              detail: pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch',
-              hasMedia: Boolean(pendingBatch.media),
-              at: new Date().toISOString()
+              title: String(campObj.title || '').slice(0, 200),
+              targetListName: String(campObj.targetListName || '').slice(0, 120),
+              targetListId: String(campObj.targetListId || '').slice(0, 128),
+              message: String(campObj.message || '').slice(0, 8000),
+              mediaName: String(campObj.mediaName || '').slice(0, 255),
+              mediaMime: String(campObj.mediaMime || '').slice(0, 128),
+              recipientCount: Math.min(500, Math.max(1, Number(campObj.recipientCount) || 1))
             });
+            for (const c of pendingBatch.contacts) {
+              const reportRef = doc(collection(db, 'users', fbUid, 'reports'));
+              const safePhone = String(c.phone || '').replace(/\D/g, '').slice(0, 20);
+              if (safePhone.length < 8) continue;
+              await setDoc(reportRef, {
+                id: reportRef.id,
+                ownerId: fbUid,
+                name: (String(c.name || '').trim() || 'Contact').slice(0, 150),
+                phone: safePhone,
+                status: 'Submitted',
+                detail: (pendingBatch.media ? `Queued message with media (${pendingBatch.media.filename})` : 'Queued for WhatsApp Web dispatch').slice(0, 500),
+                hasMedia: Boolean(pendingBatch.media),
+                at: new Date().toISOString()
+              });
+            }
+          } catch (fsErr) {
+            handleFirestoreError(fsErr, OperationType.WRITE, `users/${fbUid}/campaigns`);
+            useFs = false;
+            if (fsErr && fsErr.code === 'permission-denied') {
+              activeStorageMode = 'workspace';
+              stopFirestoreListeners();
+              updateStorageModeUI('workspace');
+            }
           }
-        } else {
+        }
+        if (!useFs) {
           campaignsList.unshift(campObj);
           const nowIso = new Date().toISOString();
           for (const c of pendingBatch.contacts) {
